@@ -51,3 +51,35 @@ npm run preview
 ```
 
 Le build de référence exécute `tsc -b && vite build`.
+
+## Serveur local persistant
+
+L’application est servie par le service utilisateur systemd `pianotrainer.service` sur `0.0.0.0:5173`. Le mode `linger` de l’utilisateur `adrien-lhomme` est activé : le service continue sans session Codex ou terminal ouvert et redémarre avec la machine.
+
+Le fichier de référence versionné est `ops/pianotrainer.service`. La copie active se trouve dans `~/.config/systemd/user/pianotrainer.service`.
+
+Commandes courantes :
+
+```bash
+systemctl --user status pianotrainer.service
+systemctl --user restart pianotrainer.service
+journalctl --user -u pianotrainer.service -f
+```
+
+Le redémarrage exécute automatiquement `npm run build` avant de servir `dist`. Après une mise à jour du code, une seule commande est donc nécessaire :
+
+```bash
+systemctl --user restart pianotrainer.service
+```
+
+Pour réinstaller le service :
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp ops/pianotrainer.service ~/.config/systemd/user/
+loginctl enable-linger "$USER"
+systemctl --user daemon-reload
+systemctl --user enable --now pianotrainer.service
+```
+
+Accès sur le réseau local : `http://192.168.0.25:5173/`.

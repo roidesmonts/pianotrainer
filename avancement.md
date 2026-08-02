@@ -292,3 +292,12 @@ L’espace Solfège, son onglet, son composant et ses styles ont été retirés 
 Trois espaces : Bibliothèque, Entraînement et Practice. Le build `tsc -b && vite build` passe. Le serveur local est accessible à `http://192.168.0.25:5173/` et consomme au repos environ 180 Mo avec très peu de CPU.
 
 Composants principaux : `src/components/PianoRollStatic.tsx`, `src/components/CatalogueEntrainement.tsx` et `src/components/Practice.tsx`.
+
+### Exploitation locale persistante — VALIDÉE
+
+- Service utilisateur systemd `pianotrainer.service` activé et suivi dans `ops/pianotrainer.service`.
+- `loginctl enable-linger adrien-lhomme` activé : le service reste disponible après fermeture du terminal ou de la session Codex et redémarre avec la machine.
+- Build automatique via `npm run build` avant chaque démarrage, puis service de `dist` avec Vite Preview sur `0.0.0.0:5173`.
+- Politique `Restart=on-failure` avec nouvelle tentative après 3 secondes.
+- Commande de déploiement local après modification : `systemctl --user restart pianotrainer.service`.
+- Validation HTTP 200 sur `http://127.0.0.1:5173/` et écoute réseau sur le port 5173.
