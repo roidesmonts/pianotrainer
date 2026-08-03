@@ -16,7 +16,11 @@ async function listerMidi(dossier = dossierMidi): Promise<string[]> {
 }
 const bibliothequeMidi = () => ({
   name: 'bibliotheque-midi-locale',
-  configureServer(server: { middlewares: { use: (route: string, handler: (req: { url?: string }, res: ServerResponse) => void) => void } }) {
+  configureServer(server: ServeurVite) { configurerBibliotheque(server) },
+  configurePreviewServer(server: ServeurVite) { configurerBibliotheque(server) },
+})
+type ServeurVite = { middlewares: { use: (route: string, handler: (req: { url?: string }, res: ServerResponse) => void) => void } }
+function configurerBibliotheque(server: ServeurVite) {
     server.middlewares.use('/api/midi-library', async (_req, res) => {
       try {
         const chemins = (await listerMidi()).sort((a, b) => a.localeCompare(b, 'fr'))
@@ -32,6 +36,5 @@ const bibliothequeMidi = () => ({
         res.setHeader('Content-Type', 'audio/midi'); res.end(await fs.readFile(absolu))
       } catch { res.statusCode = 404; res.end('Fichier introuvable') }
     })
-  },
-})
+}
 export default defineConfig({ plugins: [react(), bibliothequeMidi()] })

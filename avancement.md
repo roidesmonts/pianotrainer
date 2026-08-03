@@ -1,6 +1,6 @@
 # Avancement — Piano Trainer
 
-Dernière mise à jour : 1er août 2026
+Dernière mise à jour : 3 août 2026
 
 ## Références et emplacement
 
@@ -147,7 +147,9 @@ Tests ayant servi de critères de validation :
 5. Vérifier la lisibilité des notes très courtes, des accords denses et des très grands fichiers.
 6. Ajuster si nécessaire la vitesse visuelle par défaut, les contrastes ou l’affichage des noms.
 
-## Suite prévue
+## Plan initial conservé comme historique
+
+Les étapes ci-dessous décrivent le plan d’origine. Leur état réel et les évolutions plus récentes sont consignés dans les mises à jour datées qui suivent, en particulier celles des 1er et 3 août 2026.
 
 ### Étape 4 — Défilement sans son
 
@@ -232,16 +234,24 @@ L’explorateur actuel du serveur sert à travailler et valider l’application 
 - `src/storage/SourceDossierLocal.ts` : fichiers choisis dans le navigateur.
 - `src/storage/SourceBibliothequeServeur.ts` : bibliothèque présente sur le serveur.
 - `src/components/PianoRollStatic.tsx` : piano roll actuel.
+- `src/components/Practice.tsx` : exercices de reconnaissance de 1, 3 ou 5 notes.
+- `src/components/Progression.tsx` : statistiques et courbes issues des tentatives locales.
+- `src/storage/progression.ts` : contrat `PracticeAttempt` et persistance IndexedDB.
 - `src/components/KeyboardComparison.tsx` : ancienne comparaison A/B conservée mais inactive.
 - `src/styles.css` : styles de l’application.
 - `vite.config.ts` : React et routes de développement de la bibliothèque MIDI.
 - `package.json` : scripts et dépendances.
+- `DECISIONS.md` : décisions fonctionnelles, architecture de persistance et migration future.
+- `plan-doigtes.md` : plan expérimental pas à pas pour le merged-output HMM et les doigtés.
 
 ## Priorités de la prochaine session
 
-1. Finaliser les sauts de mesure, la boucle A–B et les raccourcis clavier.
-2. Ajouter scores et suivi de progression aux exercices.
-3. Étendre progressivement la section Solfège.
+1. Tester la qualité pédagogique des courbes avec un historique réel de tentatives.
+2. Ajouter les filtres de durée et de paramètres lorsque plusieurs configurations possèdent assez de données.
+3. Ajouter l’export/import JSON de la progression locale.
+4. Finaliser les sauts de mesure, la boucle A–B et les raccourcis clavier du lecteur.
+5. Préparer une interface de dépôt avant la future synchronisation Supabase.
+6. Suivre `plan-doigtes.md` à partir de l’étape 1 pour le chantier mains et doigtés.
 
 ## Mise à jour du 1er août 2026
 
@@ -271,7 +281,7 @@ Restent : sauts de mesure, boucle A–B et raccourcis clavier.
 - Traversées du clavier, repères, chromatisme et chasse aux notes.
 - Exercices générés en interne, filtres et ouverture directe dans le lecteur.
 
-### Practice — SÉRIE ET LONG RUN VALIDÉS
+### Practice — SÉRIE ET LONG RUN VALIDÉS AU 1er AOÛT
 
 - Deux expériences : Série pour l’entraînement réglable et Long Run pour le jeu d’endurance.
 - Série en mode Actif par défaut ou Passif sans interaction, durée par défaut de 1 minute et temps de réflexion réglable de 0,8 à 5 secondes.
@@ -289,7 +299,7 @@ L’espace Solfège, son onglet, son composant et ses styles ont été retirés 
 
 ### Navigation et validation
 
-Trois espaces : Bibliothèque, Entraînement et Practice. Le build `tsc -b && vite build` passe. Le serveur local est accessible à `http://192.168.0.25:5173/` et consomme au repos environ 180 Mo avec très peu de CPU.
+À cette date, trois espaces étaient disponibles : Bibliothèque, Entraînement et Practice. Le build `tsc -b && vite build` passait. Le serveur local était accessible à `http://192.168.0.25:5173/` et consommait au repos environ 180 Mo avec très peu de CPU.
 
 Composants principaux : `src/components/PianoRollStatic.tsx`, `src/components/CatalogueEntrainement.tsx` et `src/components/Practice.tsx`.
 
@@ -301,3 +311,77 @@ Composants principaux : `src/components/PianoRollStatic.tsx`, `src/components/Ca
 - Politique `Restart=on-failure` avec nouvelle tentative après 3 secondes.
 - Commande de déploiement local après modification : `systemctl --user restart pianotrainer.service`.
 - Validation HTTP 200 sur `http://127.0.0.1:5173/` et écoute réseau sur le port 5173.
+
+## Mise à jour du 3 août 2026
+
+### Practice — LECTURE MULTIPLE ET TROIS EXPÉRIENCES
+
+- Ajout d’un sélecteur de lecture de 1, 3 ou 5 notes simultanées.
+- Groupes générés sans doublon de nom naturel afin de rester compatibles avec les sept boutons Do–Si.
+- Sélection et désélection des réponses dans n’importe quel ordre.
+- Validation automatique dès que la dernière note requise est sélectionnée ; aucun bouton de validation supplémentaire.
+- Mise en page compacte et responsive des groupes de carrés et des boutons.
+- Délais Série par défaut : 2 secondes pour 1 note, 5 secondes pour 3 notes et 8 secondes pour 5 notes.
+- Délais Long Run initiaux : 3, 6 et 10 secondes selon la taille, avec minimum adapté aux groupes.
+
+### Contre-la-montre — AJOUTÉ
+
+- Troisième expérience disponible pour les lectures de 1, 3 et 5 notes.
+- Durée globale sélectionnable de 1, 3 ou 5 minutes, sans limite de réflexion par question.
+- Passage immédiat au groupe suivant et retour visuel bref `✓` ou `×`.
+- Un point par groupe entièrement correct.
+- Mort subite : la première erreur disqualifie immédiatement.
+- Records `localStorage` séparés par taille de groupe et durée.
+
+### Historique et progression locale — PREMIÈRE VERSION
+
+- Ajout de `src/storage/progression.ts` et d’une base IndexedDB `piano-trainer`.
+- Enregistrement de chaque partie terminée, disqualifiée ou interrompue.
+- Données conservées : date, expérience, taille du groupe, score, réponses correctes, nombre de questions, précision, durées, délai, niveau et cause de fin.
+- Ajout de `src/components/Progression.tsx` et d’un quatrième onglet **Progression**.
+- Filtres actuels par expérience et nombre de notes.
+- Courbe par tentative : précision pour Série, score pour Long Run et Contre-la-montre.
+- Affichage du record, de la moyenne et des huit dernières tentatives comparables.
+- Tentatives interrompues conservées mais exclues par défaut de la courbe.
+- Persistance entièrement locale, sans compte, serveur ou dépendance supplémentaire.
+
+### Décisions de persistance et déploiement
+
+- IndexedDB retenu pour développer la méthode avec un utilisateur unique.
+- Supabase Auth, PostgreSQL et Storage envisagés seulement lors du passage multi-utilisateur et du déploiement Vercel.
+- Le contrat `PracticeAttempt` doit rester la frontière de migration entre le dépôt local et un futur dépôt distant.
+- Ajout de `DECISIONS.md` comme référence durable pour ces choix, le modèle de données et la stratégie de migration.
+
+### Navigation actuelle
+
+Quatre espaces : Bibliothèque, Entraînement, Practice et Progression.
+
+### Validation technique
+
+- `npm run build` validé après les ajouts.
+- `npm run typecheck` validé.
+- Aucune dépendance de stockage ou de graphique ajoutée : IndexedDB et SVG natifs sont utilisés.
+
+### Doigtés — ÉTAPE 0 VALIDÉE, ÉTAPE 1 EN COURS
+
+- Lecture des articles merged-output HMM 2014 et Statistical Fingering 2020.
+- Téléchargement, inspection et compilation réussie du paquet C++ officiel `SourceCode_v190921.zip`.
+- Confirmation que ce paquet contient les HMM à une main et le Chord HMM, mais pas le merged-output HMM à deux mains.
+- Absence de licence logicielle explicite dans l’archive : code tiers maintenu hors du dépôt.
+- PIG Dataset v1.2 obtenu légalement et conservé hors Git : 150 œuvres, 309 doigtés et 100 040 annotations de notes cumulées.
+- Parseur d’inventaire ajouté ; les 309 fichiers sont lisibles sans perte. Une annotation atypique `4_` est conservée et signalée.
+- Première baseline officielle exécutée sur la pièce 001 : FHMM2 atteint 69,51 % de correspondance exacte sur 469 notes.
+
+### Point d’arrêt — 3 août 2026
+
+- L’étape 0 du chantier mains/doigtés est terminée et documentée.
+- L’étape 1 est engagée : inventaire et lecture sans perte du corpus validés sur les 309 fichiers.
+- Le corpus PIG v1.2 et le code scientifique tiers restent exclusivement dans les dossiers ignorés par Git.
+- Les sorties de la première expérience sont conservées dans `research/fingering/artifacts/baseline-001/`, également ignoré par Git.
+- L’anomalie `028-4_fingering.txt`, note 85 (`4_`), doit rester explicitement représentée comme donnée incomplète ; ne pas inventer le doigt final.
+- Les différences structurelles détectées entre certaines annotations d’une même œuvre devront être examinées avant l’évaluation multi-vérités terrain.
+- Reprise prévue : définir le format interne sans perte, ajouter des fixtures et tests du parseur, puis contrôler visuellement plusieurs passages face aux partitions PDF.
+- Ne pas commencer le merged-output HMM ni son intégration React avant la validation complète des étapes 1 et 2.
+- Création de `research/fingering/` avec documentation, règles de reproductibilité et script de récupération vérifié par SHA-256.
+- Graine expérimentale fixée à `20260803` et découpage de reproduction aligné sur l’article 2020.
+- PIG v1.2 a ensuite été obtenu par inscription personnelle ; son usage publié reste limité à la recherche académique non lucrative et le corpus demeure hors Git.

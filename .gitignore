@@ -4,3 +4,9 @@ dist
 *.local
 *.log
 *.tsbuildinfo
+
+# Recherche doigtés : corpus et code tiers non redistribuables
+research/fingering/data/
+research/fingering/vendor/
+research/fingering/artifacts/
+research/fingering/references/

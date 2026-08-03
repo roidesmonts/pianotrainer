@@ -6,6 +6,7 @@ import type { EntreeMorceau, MorceauMidi } from './types/midi'
 import { PianoRollStatic } from './components/PianoRollStatic'
 import { CatalogueEntrainement } from './components/CatalogueEntrainement'
 import { Practice } from './components/Practice'
+import { Progression } from './components/Progression'
 import type { Exercice } from './training/exercices'
 
 const locale = new SourceDossierLocal(), serveur = new SourceBibliothequeServeur()
@@ -14,7 +15,7 @@ const duree = (n: number) => `${Math.floor(n / 60)}:${Math.floor(n % 60).toStrin
 
 export default function App() {
   const input = useRef<HTMLInputElement>(null)
-  const [morceau, setMorceau] = useState<MorceauMidi | null>(null), [fichier, setFichier] = useState(''), [vue, setVue] = useState<'bibliotheque' | 'entrainement' | 'practice'>('bibliotheque')
+  const [morceau, setMorceau] = useState<MorceauMidi | null>(null), [fichier, setFichier] = useState(''), [vue, setVue] = useState<'bibliotheque' | 'entrainement' | 'practice' | 'progression'>('bibliotheque')
   const [erreur, setErreur] = useState(''), [charge, setCharge] = useState(false), [survol, setSurvol] = useState(false)
   const [bibliotheque, setBibliotheque] = useState<EntreeMorceau[]>([]), [recherche, setRecherche] = useState('')
   const [dossierCourant, setDossierCourant] = useState('')
@@ -54,7 +55,7 @@ export default function App() {
   function deposer(e: DragEvent<HTMLDivElement>) { e.preventDefault(); setSurvol(false); if (e.dataTransfer.files[0]) void ouvrirLocal(e.dataTransfer.files[0]) }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">Lecteur et apprentissage du piano</p><h1>Piano Trainer</h1></div>{morceau ? <button className="secondary" onClick={() => setMorceau(null)}>Quitter le morceau</button> : <nav className="main-tabs"><button className={vue === 'bibliotheque' ? 'active' : ''} onClick={() => setVue('bibliotheque')}>Bibliothèque</button><button className={vue === 'entrainement' ? 'active' : ''} onClick={() => setVue('entrainement')}>Entraînement</button><button className={vue === 'practice' ? 'active' : ''} onClick={() => setVue('practice')}>Practice</button></nav>}</header>
+    <header className="app-header"><div><p className="eyebrow">Lecteur et apprentissage du piano</p><h1>Piano Trainer</h1></div>{morceau ? <button className="secondary" onClick={() => setMorceau(null)}>Quitter le morceau</button> : <nav className="main-tabs"><button className={vue === 'bibliotheque' ? 'active' : ''} onClick={() => setVue('bibliotheque')}>Bibliothèque</button><button className={vue === 'entrainement' ? 'active' : ''} onClick={() => setVue('entrainement')}>Entraînement</button><button className={vue === 'practice' ? 'active' : ''} onClick={() => setVue('practice')}>Practice</button><button className={vue === 'progression' ? 'active' : ''} onClick={() => setVue('progression')}>Progression</button></nav>}</header>
     <input ref={input} className="hidden" type="file" accept=".mid,.midi,audio/midi,audio/x-midi" onChange={e => { if (e.target.files?.[0]) void ouvrirLocal(e.target.files[0]); e.target.value = '' }} />
     {!morceau && vue === 'bibliotheque' && <div className="sources">
       <section className="library-picker"><div className="library-heading"><span className="file-icon">BASE</span><div><h2>Bibliothèque du serveur</h2><p>{bibliotheque.length ? `${bibliotheque.length.toLocaleString('fr-FR')} fichiers MIDI disponibles` : 'Chargement de la bibliothèque…'}</p></div></div>
@@ -76,6 +77,7 @@ export default function App() {
       </section></div>}
     {!morceau && vue === 'entrainement' && <CatalogueEntrainement ouvrir={ouvrirExercice} />}
     {!morceau && vue === 'practice' && <Practice />}
+    {!morceau && vue === 'progression' && <Progression />}
     {erreur && <p className="error" role="alert">{erreur}</p>}
     {morceau && <><PianoRollStatic morceau={morceau} /><Inspecteur morceau={morceau} fichier={fichier} /></>}
   </main>
