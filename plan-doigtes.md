@@ -200,26 +200,30 @@ Trois niveaux visuels sont envisagés : proposition fiable, proposition incertai
 
 **Critère de validation :** environnement reproductible, données non versionnées, une commande documentée pour lancer une expérience.
 
-### Étape 1 — Compréhension et conversion de PIG — EN COURS
+### Étape 1 — Compréhension et conversion de PIG — VALIDÉE
 
 - [x] Parser le format d’annotation PIG sans perte.
 - [x] Vérifier les conventions main/doigt et les accords.
 - [x] Produire des statistiques initiales du corpus.
 - [x] Détecter annotations multiples et données invalides.
-- [ ] Convertir vers un format interne documenté.
-- [ ] Écrire des tests sur quelques passages contrôlés manuellement.
+- [x] Convertir vers un format interne documenté.
+- [x] Écrire des tests sur quelques passages contrôlés manuellement.
 
 **Critère de validation :** toutes les annotations attendues sont chargées et plusieurs partitions concordent visuellement avec leurs fichiers de doigté.
 
-### Étape 2 — Reproduction du HMM officiel à une main
+Validation visuelle confirmée par l'utilisateur le 3 août 2026 depuis la section Recherche de Piano Trainer.
 
-- [ ] Exécuter les modèles officiels d’ordre 1, 2 et 3.
-- [ ] Reproduire leurs métriques sur le découpage de référence.
-- [ ] Comprendre l’apprentissage des transitions et déplacements.
-- [ ] Reproduire le Chord HMM.
-- [ ] Enregistrer paramètres, métriques et journaux d’expérience.
+### Étape 2 — Reproduction du HMM officiel à une main — VALIDÉE
+
+- [x] Exécuter les modèles officiels d’ordre 1, 2 et 3.
+- [x] Reproduire leurs métriques sur le découpage de référence.
+- [x] Comprendre l’apprentissage des transitions et déplacements.
+- [x] Reproduire le Chord HMM.
+- [x] Enregistrer paramètres, métriques et journaux d’expérience.
 
 **Critère de validation :** résultats suffisamment proches des valeurs publiées pour exclure une erreur de préparation ou d’évaluation.
+
+Validation obtenue le 3 août 2026 sur PIG v1.2. L'écart maximal aux valeurs publiées est inférieur à un point de pourcentage et le réentraînement local reproduit les paramètres officiels à moins de 0,05 point sur presque toutes les métriques.
 
 ### Étape 3 — Merged-output HMM à deux mains
 
@@ -265,6 +269,6 @@ Trois niveaux visuels sont envisagés : proposition fiable, proposition incertai
 
 **Critère de validation :** un morceau peut être séparé, travaillé par main et corrigé sans altérer le MIDI original.
 
-## Première action
+## Prochaine action
 
-Commencer uniquement par l’étape 0. Ne pas implémenter de moteur dans l’application avant d’avoir inspecté le code officiel, obtenu légalement le corpus et reproduit une baseline publiée.
+Commencer l’étape 3 dans l'espace expérimental, sans intégrer encore de moteur dans l'application principale : spécifier l'état merged-output, construire une baseline de séparation par registre et implémenter le décodage exact sur de petites fixtures contrôlées avant l'apprentissage complet.

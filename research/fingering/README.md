@@ -137,6 +137,26 @@ Analyser le corpus :
 node research/fingering/scripts/analyze-pig.mjs
 ```
 
+## Format interne v1
+
+La conversion produit un fichier JSON par annotation et un manifeste. Les sorties restent locales et sont ignorées par Git :
+
+```bash
+npm run convert:pig
+```
+
+Chaque annotation contient `schemaVersion`, les identifiants d'œuvre et d'annotateur, les métadonnées PIG et la liste ordonnée des notes. Chaque note conserve les temps et vélocités, l'orthographe de hauteur source, le canal et le texte de doigté originaux. Elle ajoute une hauteur MIDI, une main `left` ou `right`, des doigts positifs et un `noteId` stable composé de l'œuvre, l'identifiant source, la hauteur et un index de doublon.
+
+Les substitutions sont normalisées dans `substitutions`. Le booléen `substitutionIncomplete` conserve explicitement une terminaison incomplète telle que `4_` sans inventer de doigt final. Toute évolution incompatible devra incrémenter `schemaVersion`.
+
+Les passages contrôlés couvrent les deux mains, les accords, les altérations, les substitutions et l'anomalie incomplète :
+
+```bash
+npm run test:fingering
+```
+
+Dans l'application, l'onglet **Recherche** fournit le poste de validation visuelle : partition PDF, annotation convertie, filtres par main ou anomalie et checklist persistante par annotateur. Cette interface dépend du serveur Vite local et des données privées présentes dans `data/` et `generated/` ; elle n'est pas destinée au déploiement public.
+
 ## Première baseline vérifiée
 
 Une inférence complète a été exécutée sur `001-1_fingering.txt` avec les paramètres officiels. Match rate exact sur 469 notes :
@@ -149,3 +169,7 @@ Une inférence complète a été exécutée sur `001-1_fingering.txt` avec les p
 | Chord HMM | 54,37 % |
 
 Ce contrôle valide la chaîne fichier PIG → inférence officielle → évaluateur officiel. Il ne constitue pas encore la reproduction des métriques globales publiées.
+
+## Reproduction globale — étape 2 validée
+
+Les quatre modèles officiels ont été entraînés et évalués sur le découpage de l'article. Les commandes, résultats, écarts à la publication et détails d'apprentissage sont consignés dans [`STEP-2-RESULTS.md`](STEP-2-RESULTS.md).

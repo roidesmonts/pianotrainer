@@ -5,6 +5,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const dossierMidi = path.resolve(process.cwd(), '../midi')
+const dossierRecherche = path.resolve(process.cwd(), 'research/fingering')
+const dossierAnnotations = path.join(dossierRecherche, 'generated/internal-v1')
+const dossierPartitions = path.join(dossierRecherche, 'data/PianoFingeringDataset_v1.2/ScorePDF')
 async function listerMidi(dossier = dossierMidi): Promise<string[]> {
   const entrees = await fs.readdir(dossier, { withFileTypes: true })
   const listes = await Promise.all(entrees.map(async (entree) => {
@@ -18,6 +21,11 @@ const bibliothequeMidi = () => ({
   name: 'bibliotheque-midi-locale',
   configureServer(server: ServeurVite) { configurerBibliotheque(server) },
   configurePreviewServer(server: ServeurVite) { configurerBibliotheque(server) },
+})
+const rechercheDoigtes = () => ({
+  name: 'recherche-doigtes-locale',
+  configureServer(server: ServeurVite) { configurerRecherche(server) },
+  configurePreviewServer(server: ServeurVite) { configurerRecherche(server) },
 })
 type ServeurVite = { middlewares: { use: (route: string, handler: (req: { url?: string }, res: ServerResponse) => void) => void } }
 function configurerBibliotheque(server: ServeurVite) {
@@ -37,4 +45,49 @@ function configurerBibliotheque(server: ServeurVite) {
       } catch { res.statusCode = 404; res.end('Fichier introuvable') }
     })
 }
-export default defineConfig({ plugins: [react(), bibliothequeMidi()] })
+function cheminLocalSecurise(racine: string, url: string, extension: RegExp) {
+  const relatif = decodeURIComponent(url.replace(/^\//, ''))
+  const absolu = path.resolve(racine, relatif)
+  return absolu.startsWith(`${racine}${path.sep}`) && extension.test(absolu) ? absolu : null
+}
+async function configurerIndexRecherche() {
+  const [annotations, partitions] = await Promise.all([
+    fs.readdir(dossierAnnotations),
+    fs.readdir(dossierPartitions),
+  ])
+  const pdfParPiece = new Map(partitions.filter((nom) => /\.pdf$/i.test(nom)).map((nom) => [nom.slice(0, 3), nom]))
+  const oeuvres = new Map<string, { pieceId: string; title: string; pdf: string | null; annotations: string[] }>()
+  for (const nom of annotations.filter((nom) => /^\d+-\d+\.json$/.test(nom))) {
+    const pieceId = nom.slice(0, 3)
+    const pdf = pdfParPiece.get(pieceId) ?? null
+    const title = pdf ? pdf.replace(/^\d+_/, '').replace(/\.pdf$/i, '').replace(/_/g, ' ') : `Œuvre ${pieceId}`
+    const oeuvre = oeuvres.get(pieceId) ?? { pieceId, title, pdf, annotations: [] }
+    oeuvre.annotations.push(nom)
+    oeuvres.set(pieceId, oeuvre)
+  }
+  return [...oeuvres.values()].sort((a, b) => a.pieceId.localeCompare(b.pieceId, 'en', { numeric: true }))
+}
+function configurerRecherche(server: ServeurVite) {
+  server.middlewares.use('/api/fingering-research', async (_req, res) => {
+    try {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.end(JSON.stringify(await configurerIndexRecherche()))
+    } catch {
+      res.statusCode = 503
+      res.end(JSON.stringify({ error: 'Lancez npm run convert:pig pour préparer les données de recherche.' }))
+    }
+  })
+  server.middlewares.use('/fingering-research/annotations', async (req, res) => {
+    const fichier = cheminLocalSecurise(dossierAnnotations, req.url ?? '', /\.json$/i)
+    if (!fichier) { res.statusCode = 403; res.end('Accès refusé'); return }
+    try { res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(await fs.readFile(fichier)) }
+    catch { res.statusCode = 404; res.end('Annotation introuvable') }
+  })
+  server.middlewares.use('/fingering-research/scores', async (req, res) => {
+    const fichier = cheminLocalSecurise(dossierPartitions, req.url ?? '', /\.pdf$/i)
+    if (!fichier) { res.statusCode = 403; res.end('Accès refusé'); return }
+    try { res.setHeader('Content-Type', 'application/pdf'); res.end(await fs.readFile(fichier)) }
+    catch { res.statusCode = 404; res.end('Partition introuvable') }
+  })
+}
+export default defineConfig({ plugins: [react(), bibliothequeMidi(), rechercheDoigtes()] })

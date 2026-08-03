@@ -216,6 +216,24 @@ L’explorateur actuel du serveur sert à travailler et valider l’application 
 
 ## Points techniques importants pour la reprise
 
+### Recherche main droite / main gauche — étape 1
+
+- Ajout d'un onglet Recherche réservé au développement local.
+- Comparaison côte à côte de la partition PDF PIG et de l'annotation JSON convertie.
+- Sélection des 150 œuvres et de leurs 309 annotations.
+- Filtres main droite, main gauche et substitutions/anomalies.
+- Checklist de validation et notes sauvegardées localement par annotation.
+- Les routes Vite ne servent que les fichiers JSON et PDF situés dans les répertoires de recherche autorisés.
+- Étape 1 validée par l'utilisateur le 3 août 2026 après contrôle visuel dans l'application.
+
+### Recherche main droite / main gauche — étape 2 validée
+
+- Reproduction globale des FHMM d'ordres 1, 2 et 3 et du Chord HMM sur les 30 œuvres de test.
+- Réentraînement réussi sur les 159 annotations miscellaneous de PIG v1.2.
+- Classement et métriques publiés reproduits avec un écart maximal inférieur à un point.
+- Résultats détaillés dans `research/fingering/STEP-2-RESULTS.md`.
+- Prochaine étape : merged-output HMM à deux mains, incluant la séparation automatique nécessaire aux fichiers MIDI ordinaires.
+
 - Node actuel : `v18.19.1`.
 - npm actuel : `9.2.0`.
 - Vite actuel : branche 5, compatible avec ce Node.
@@ -223,7 +241,7 @@ L’explorateur actuel du serveur sert à travailler et valider l’application 
 - Le build de production passe avec `npm run build`.
 - Le serveur réseau doit être lancé avec `npm run dev -- --host 0.0.0.0`.
 - L’accès au dossier `../midi` est uniquement configuré dans le serveur de développement Vite.
-- Le dépôt Git a été initialisé mais aucun commit n’a encore été créé.
+- Le dépôt Git est versionné sur GitHub, branche `main`.
 - Les étapes 4 et 5 sont validées ; l’étape 6 reste à compléter.
 
 ## Principaux fichiers
