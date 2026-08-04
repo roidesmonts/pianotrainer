@@ -1,6 +1,6 @@
 # Avancement — Piano Trainer
 
-Dernière mise à jour : 3 août 2026
+Dernière mise à jour : 4 août 2026
 
 ## Références et emplacement
 
@@ -488,3 +488,18 @@ Quatre espaces : Bibliothèque, Entraînement, Practice et Progression.
 - Confiance de séparation issue de la marge des scores gauche/droite, à la place de l’ancien indicateur de registre.
 - Évaluation de la chaîne finale sur 10 225 notes : 92,98 % pour la main, 54,14 % pour le couple exact, 0 croisement sur 2 297 accords mixtes et 12,24 % de notes signalées.
 - Rapport détaillé : `research/fingering/STEP-6-INTERFACE.md`.
+
+
+## Mise à jour du 4 août 2026 — Practice et progression Long Run
+
+- Practice recentré sur deux expériences : **Long Run** et **Contre-la-montre** ; l’ancienne expérience Série et ses réglages associés sont retirés.
+- Génération exhaustive des groupes possibles afin d’éviter exactement la répétition de deux groupes consécutifs.
+- Records de Practice désormais relus depuis l’historique IndexedDB, avec génération d’identifiants compatible avec les navigateurs ne proposant pas `crypto.randomUUID`.
+- Progression du Contre-la-montre filtrée par durée configurée (1, 3 ou 5 minutes), en plus du nombre de notes.
+- Pour chaque format de Long Run (1, 3 ou 5 notes), un niveau est considéré franchi lorsqu’une partie atteint le niveau suivant.
+- Après **5 franchissements** d’un même niveau, les parties suivantes commencent directement au niveau supérieur ; les parties arrêtées manuellement ne participent pas au déblocage.
+- Le déblocage est recalculé au chargement de l’historique et immédiatement après l’enregistrement d’une partie, afin que le bouton **Rejouer** profite sans rechargement du nouveau niveau de départ.
+- Le score de départ reproduit les points théoriquement gagnés par la voie régulière sur chaque niveau sauté : `plancher(30 secondes / délai du niveau)`, puis somme de tous les niveaux antérieurs.
+- Exemples au premier niveau : 10 points pour 1 note à 3 secondes, 5 points pour 3 notes à 6 secondes et 3 points pour 5 notes à 10 secondes.
+- Le niveau, le délai et le total des points acquis sont affichés avant le démarrage de la partie.
+- Validation technique : `npm run build` réussi après l’implémentation.

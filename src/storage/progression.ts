@@ -1,4 +1,4 @@
-export type PracticeExperience = 'serie' | 'long' | 'chrono'
+export type PracticeExperience = 'long' | 'chrono'
 export type PracticeResult = 'completed' | 'disqualified' | 'stopped'
 
 export type PracticeAttempt = {
@@ -18,6 +18,14 @@ export type PracticeAttempt = {
 }
 
 const DB_NAME = 'piano-trainer', STORE_NAME = 'practice-attempts', DB_VERSION = 1
+
+export function createAttemptId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const randomPart = typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
+    ? crypto.getRandomValues(new Uint32Array(2)).join('-')
+    : Math.random().toString(36).slice(2)
+  return `${Date.now()}-${randomPart}`
+}
 
 function ouvrir(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
