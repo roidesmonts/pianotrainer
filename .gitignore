@@ -4,6 +4,7 @@ dist
 *.local
 *.log
 *.tsbuildinfo
+.fingering-test-build/
 
 # Recherche doigtés : corpus et code tiers non redistribuables
 research/fingering/data/

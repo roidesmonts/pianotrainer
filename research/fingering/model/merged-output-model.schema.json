@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pianotrainer.local/schemas/merged-output-model-v1.json",
+  "title": "Piano Trainer merged-output hand and fingering model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "modelVersion", "widthX", "provenance", "handSeparation", "logInitialFinger", "logFingerTransition", "logKeyOutput"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "merged-output-hand-fingering" },
+    "modelVersion": { "type": "string", "minLength": 1 },
+    "widthX": { "const": 15 },
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["corpus", "license", "redistribution", "trainedAt", "smoothing"],
+      "properties": {
+        "corpus": { "type": "string" }, "license": { "type": "string" },
+        "redistribution": { "enum": ["allowed", "not-cleared"] }, "trainedAt": { "type": "string" },
+        "smoothing": { "type": "object", "required": ["handSeparation", "fingering"], "properties": { "handSeparation": { "type": "number" }, "fingering": { "type": "number" } } }
+      }
+    },
+    "handSeparation": { "$ref": "#/$defs/handSeparation" },
+    "logInitialFinger": { "$ref": "#/$defs/handsVector5" },
+    "logFingerTransition": { "$ref": "#/$defs/handsMatrix5" },
+    "logKeyOutput": { "$ref": "#/$defs/handsTensor" }
+  },
+  "$defs": {
+    "number": { "type": "number" },
+    "vector128": { "type": "array", "minItems": 128, "maxItems": 128, "items": { "$ref": "#/$defs/number" } },
+    "vector5": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/number" } },
+    "matrix128": { "type": "array", "minItems": 128, "maxItems": 128, "items": { "$ref": "#/$defs/vector128" } },
+    "matrix5": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/vector5" } },
+    "handsVector5": { "type": "object", "required": ["left", "right"], "properties": { "left": { "$ref": "#/$defs/vector5" }, "right": { "$ref": "#/$defs/vector5" } } },
+    "handsMatrix5": { "type": "object", "required": ["left", "right"], "properties": { "left": { "$ref": "#/$defs/matrix5" }, "right": { "$ref": "#/$defs/matrix5" } } },
+    "outputVector": { "type": "array", "minItems": 93, "maxItems": 93, "items": { "$ref": "#/$defs/number" } },
+    "outputMatrix": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/outputVector" } },
+    "tensor5": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/outputMatrix" } },
+    "handsTensor": { "type": "object", "required": ["left", "right"], "properties": { "left": { "$ref": "#/$defs/tensor5" }, "right": { "$ref": "#/$defs/tensor5" } } },
+    "handSeparation": { "type": "object", "required": ["schemaVersion", "smoothing", "logHandPrior", "logInitialPitch", "logPitchTransition"], "properties": {
+      "schemaVersion": { "const": 2 }, "smoothing": { "type": "number" },
+      "logHandPrior": { "type": "object", "required": ["left", "right"], "properties": { "left": { "type": "number" }, "right": { "type": "number" } } },
+      "logInitialPitch": { "type": "object", "required": ["left", "right"], "properties": { "left": { "$ref": "#/$defs/vector128" }, "right": { "$ref": "#/$defs/vector128" } } },
+      "logPitchTransition": { "type": "object", "required": ["left", "right"], "properties": { "left": { "$ref": "#/$defs/matrix128" }, "right": { "$ref": "#/$defs/matrix128" } } }
+    }
+  }
+}

@@ -8,10 +8,18 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "test:fingering": "node --test research/fingering/test/*.test.mjs",
+    "test:fingering": "tsc -p tsconfig.fingering-test.json && node --test research/fingering/test/*.test.mjs",
+    "export:fingering-model": "node research/fingering/scripts/export-portable-model.mjs --public",
+    "export:fingering-model:local": "node research/fingering/scripts/export-portable-model.mjs --input research/fingering/artifacts/joint-fingering-v1/model.json --output research/fingering/artifacts/joint-fingering-v1/portable-model.json",
     "analyze:pig": "node research/fingering/scripts/analyze-pig.mjs",
     "convert:pig": "node research/fingering/scripts/convert-pig.mjs",
-    "reproduce:hmm": "node research/fingering/scripts/reproduce-official-hmm.mjs"
+    "reproduce:hmm": "node research/fingering/scripts/reproduce-official-hmm.mjs",
+    "evaluate:hands": "node research/fingering/scripts/evaluate-hand-separation.mjs",
+    "separate:midi": "node research/fingering/scripts/separate-midi-hands.mjs",
+    "evaluate:joint": "node research/fingering/scripts/evaluate-joint-fingering.mjs",
+    "finger:midi": "node research/fingering/scripts/finger-midi.mjs",
+    "evaluate:robustness": "node research/fingering/scripts/evaluate-performance-robustness.mjs",
+    "benchmark:fingering": "node research/fingering/scripts/benchmark-midi-fingering.mjs"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",

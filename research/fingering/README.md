@@ -173,3 +173,20 @@ Ce contrôle valide la chaîne fichier PIG → inférence officielle → évalua
 ## Reproduction globale — étape 2 validée
 
 Les quatre modèles officiels ont été entraînés et évalués sur le découpage de l'article. Les commandes, résultats, écarts à la publication et détails d'apprentissage sont consignés dans [`STEP-2-RESULTS.md`](STEP-2-RESULTS.md).
+
+## Merged-output — étapes 3 et 4 validées
+
+Le premier jalon implémente un Viterbi exact de séparation des mains, le compare aux coupures de registre et l'applique à un véritable fichier MIDI. Les résultats et limites sont consignés dans [`STEP-3-MILESTONE-1.md`](STEP-3-MILESTONE-1.md).
+
+Le deuxième jalon ajoute les doigts dans l'état conjoint, mesure le compromis exact/beam et produit main plus doigt pour un MIDI ordinaire. Voir [`STEP-3-MILESTONE-2.md`](STEP-3-MILESTONE-2.md).
+
+Le premier jalon de robustesse choisit automatiquement une fenêtre de 40 ms pour les attaques de performance désynchronisées. Voir [`STEP-4-MILESTONE-1.md`](STEP-4-MILESTONE-1.md).
+
+Le deuxième jalon distingue occupation physique, résonance de pédale et vélocité sur deux MIDI réels. Voir [`STEP-4-MILESTONE-2.md`](STEP-4-MILESTONE-2.md).
+
+Le troisième jalon mesure le moteur sur des MIDI court, dense et long, et clôt la robustesse par des critères automatiques reproductibles. Voir [`STEP-4-MILESTONE-3.md`](STEP-4-MILESTONE-3.md).
+
+
+## Format portable — étape 5 validée
+
+Le schéma JSON versionné, le chargeur et le Viterbi TypeScript sont opérationnels. Un modèle synthétique original CC0 valide la distribution et la parité navigateur ; les paramètres PIG restent locaux tant que leurs droits dérivés ne sont pas clarifiés. Les chemins et scores concordent avec le prototype sur trois fixtures. Voir [`STEP-5-PORTABLE-TYPESCRIPT.md`](STEP-5-PORTABLE-TYPESCRIPT.md).

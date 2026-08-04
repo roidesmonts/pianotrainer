@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.app.json","compilerOptions":{"noEmit":false,"isolatedModules":false,"declaration":false,"outDir":".fingering-test-build","rootDir":"src"},"include":["src/fingering/**/*.ts"]}

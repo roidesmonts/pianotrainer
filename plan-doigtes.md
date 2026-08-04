@@ -225,38 +225,55 @@ Validation visuelle confirmée par l'utilisateur le 3 août 2026 depuis la secti
 
 Validation obtenue le 3 août 2026 sur PIG v1.2. L'écart maximal aux valeurs publiées est inférieur à un point de pourcentage et le réentraînement local reproduit les paramètres officiels à moins de 0,05 point sur presque toutes les métriques.
 
-### Étape 3 — Merged-output HMM à deux mains
+### Étape 3 — Merged-output HMM à deux mains — VALIDÉE
 
-- [ ] Reproduire l’état fusionné des deux modèles de main.
-- [ ] Implémenter l’apprentissage supervisé des paramètres.
-- [ ] Implémenter Viterbi exact en log-probabilités.
-- [ ] Gérer les accords selon la méthode de référence.
-- [ ] Comparer l’affectation des mains et des doigts aux annotations PIG.
-- [ ] Analyser manuellement les erreurs les plus fréquentes.
+Jalon 3A — séparation des mains par hauteurs :
+
+- [x] Implémenter la baseline de coupure fixe de registre.
+- [x] Apprendre une coupure de registre uniquement sur l'entraînement.
+- [x] Implémenter le Viterbi merged-output exact mémorisant la dernière hauteur de chaque main.
+- [x] Vérifier Viterbi contre une recherche exhaustive sur une fixture.
+- [x] Dépasser les baselines de registre sur les 30 œuvres de test.
+- [x] Exécuter le séparateur sur un fichier MIDI ordinaire avec identité stable des notes.
+
+Jalon 3B — modèle conjoint mains et doigts :
+
+- [x] Reproduire l’état fusionné des deux modèles de main.
+- [x] Implémenter l’apprentissage supervisé des paramètres.
+- [x] Implémenter Viterbi exact en log-probabilités.
+- [x] Gérer l'ordre virtuel, les doigts distincts et l'ordre physique des accords selon la méthode de référence.
+- [x] Comparer l’affectation des mains et des doigts aux annotations PIG.
+- [x] Analyser automatiquement les erreurs par œuvre, monodie, accords et cohérence physique.
 
 **Critère de validation :** meilleure séparation des mains qu’une coupure fixe et doigtés comparables à la référence scientifique.
 
-### Étape 4 — Robustesse aux MIDI de performance
+Validation obtenue le 3 août 2026 : 91,98 % d'exactitude pour la main sur les 150 annotations de test, contre 84,55 % pour la meilleure coupure de registre apprise ; 55,34 % pour le doigt et 51,70 % pour le couple main+doigt. L'analyse humaine de plausibilité musicale est explicitement écartée à ce stade au profit de mesures automatiques reproductibles.
 
-- [ ] Tester les attaques légèrement désynchronisées.
-- [ ] Tester pédale, notes tenues et vélocités variables.
-- [ ] Définir une tolérance de regroupement fondée sur les données.
-- [ ] Tester des MIDI quantifiés et non quantifiés.
-- [ ] Mesurer les performances sur des morceaux courts, longs et denses.
-- [ ] Comparer sur un corpus personnel dont les mains sont connues.
+### Étape 4 — Robustesse aux MIDI de performance — VALIDÉE
+
+- [x] Tester les attaques légèrement désynchronisées.
+- [x] Tester pédale, notes tenues et vélocités variables.
+- [x] Définir une tolérance de regroupement fondée sur les données.
+- [x] Tester des séquences quantifiées et désynchronisées de façon contrôlée.
+- [x] Mesurer les performances sur des morceaux courts, longs et denses.
+- [x] Comparer aux mains connues de PIG et aux invariants physiques sur des MIDI réels.
 
 **Critère de validation :** sorties stables et musicalement plausibles sur les fichiers réellement utilisés par Piano Trainer.
 
-### Étape 5 — Format portable et moteur TypeScript
+Validation automatique obtenue le 3 août 2026 : de 313 à 573 notes/s sur 80, 1 325 et 18 774 notes, beam plafonné à 100 états, décodage déterministe et aucun conflit de doigt tenu sur 2 991 notes de performance. La comparaison aux mains annotées de PIG remplace le corpus personnel et l'appréciation humaine écartée par l'utilisateur. Le cas long atteint 463,7 Mio, point de vigilance explicite pour le portage navigateur.
 
-- [ ] Définir et versionner le schéma JSON des paramètres.
-- [ ] Exporter un modèle entraîné autorisé à être distribué.
-- [ ] Porter l’inférence Viterbi en TypeScript.
-- [ ] Créer les mêmes fixtures dans le prototype et dans TypeScript.
-- [ ] Vérifier l’égalité des chemins et scores numériques.
-- [ ] Ajouter beam search uniquement si les mesures le justifient.
+### Étape 5 — Format portable et moteur TypeScript — VALIDÉE
+
+- [x] Définir et versionner le schéma JSON des paramètres.
+- [x] Exporter un modèle entraîné autorisé à être distribué.
+- [x] Porter l’inférence Viterbi en TypeScript.
+- [x] Créer les mêmes fixtures dans le prototype et dans TypeScript.
+- [x] Vérifier l’égalité des chemins et scores numériques.
+- [x] Ajouter beam search uniquement si les mesures le justifient.
 
 **Critère de validation :** mêmes affectations dans l’outil de référence et dans le navigateur sur le jeu de fixtures.
+
+Validation obtenue le 4 août 2026 : parité exacte des chemins, des états explorés et de l’élagage sur trois fixtures ; écart de score inférieur à 10⁻¹². Le modèle PIG reste local faute de droits de redistribution clarifiés ; l’artefact versionné est entraîné sur des fixtures synthétiques originales CC0 et sert uniquement à valider la chaîne portable.
 
 ### Étape 6 — Interface Piano Trainer
 
@@ -271,4 +288,4 @@ Validation obtenue le 3 août 2026 sur PIG v1.2. L'écart maximal aux valeurs pu
 
 ## Prochaine action
 
-Commencer l’étape 3 dans l'espace expérimental, sans intégrer encore de moteur dans l'application principale : spécifier l'état merged-output, construire une baseline de séparation par registre et implémenter le décodage exact sur de petites fixtures contrôlées avant l'apprentissage complet.
+Commencer l'étape 5 : définir le schéma JSON portable, préciser les conditions de distribution des paramètres, puis porter le décodage en TypeScript avec des fixtures communes garantissant les mêmes chemins et scores que le prototype expérimental.

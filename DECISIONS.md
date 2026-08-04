@@ -1,6 +1,6 @@
 # Décisions d’architecture — Piano Trainer
 
-Dernière mise à jour : 3 août 2026
+Dernière mise à jour : 4 août 2026
 
 Ce document conserve les choix durables du projet et leur motivation. L’état d’avancement chronologique reste dans `avancement.md` et les instructions d’utilisation dans `README.md`.
 
@@ -95,3 +95,9 @@ Un classement public exigera une validation serveur des résultats. Les scores p
 - `avancement.md` est la mémoire chronologique et décrit l’état réel de la réalisation.
 - `DECISIONS.md` conserve les règles fonctionnelles et choix d’architecture qui doivent survivre aux changements d’implémentation.
 - Les documents doivent être mis à jour après chaque fonctionnalité validée, sans dépendre de l’historique d’une conversation ou uniquement des commits Git.
+
+
+## Publication Git
+
+- Les changements validés sont publiés directement sur la branche `main`, sans branche intermédiaire ni pull request, sauf demande explicite contraire.
+- Un commit ne doit toutefois jamais inclure silencieusement des modifications locales sans rapport avec le périmètre demandé.

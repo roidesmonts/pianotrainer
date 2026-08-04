@@ -232,7 +232,70 @@ L’explorateur actuel du serveur sert à travailler et valider l’application 
 - Réentraînement réussi sur les 159 annotations miscellaneous de PIG v1.2.
 - Classement et métriques publiés reproduits avec un écart maximal inférieur à un point.
 - Résultats détaillés dans `research/fingering/STEP-2-RESULTS.md`.
-- Prochaine étape : merged-output HMM à deux mains, incluant la séparation automatique nécessaire aux fichiers MIDI ordinaires.
+
+### Recherche main droite / main gauche — étape 3, jalon 3A
+
+- Implémentation d'un Viterbi merged-output exact mémorisant la dernière hauteur de chaque main.
+- Vérification du chemin exact contre l'énumération exhaustive sur une petite séquence.
+- Entraînement des transitions de hauteurs sur les 159 annotations miscellaneous, sans fuite des œuvres de test.
+- Exactitude sur 50 014 notes de test : 88,04 %, contre 84,55 % pour la meilleure coupure apprise et 81,39 % pour MIDI 60.
+- Ajout de `npm run separate:midi -- entree.mid sortie.json` pour les véritables fichiers MIDI.
+- Contrôle sur Clair de lune : 1 505 notes décodées depuis une piste unique.
+- Résultats détaillés dans `research/fingering/STEP-3-MILESTONE-1.md`.
+- Prochain jalon : intégrer les doigts des deux mains dans l'état et réutiliser les probabilités FHMM de l'étape 2.
+
+### Recherche main droite / main gauche — étape 3, jalon 3B
+
+- État conjoint mémorisant hauteur et doigt courants de chaque main.
+- Apprentissage supervisé des transitions de doigts et des 93 déplacements géométriques officiels du clavier.
+- Viterbi exact validé contre les `10^N` chemins possibles sur fixture ; beam explicite pour les séquences longues.
+- Sur 10 225 notes : 91,98 % pour la main, 54,61 % pour le doigt et 50,79 % pour le couple exact avec beam 100.
+- Beam 500 cinq fois plus coûteux sans gain mesuré ; beam 100 retenu provisoirement.
+- Ajout de `npm run finger:midi -- entree.mid sortie.json` pour produire main et doigt depuis un MIDI ordinaire.
+- Résultats détaillés dans `research/fingering/STEP-3-MILESTONE-2.md`.
+- Restent à traiter avant validation : accords, analyse manuelle des erreurs et évaluation multi-vérités complète.
+
+### Recherche main droite / main gauche — étape 3, accords et évaluation étendue
+
+- Normalisation des attaques simultanées dans l'ordre virtuel grave→aigu de la référence.
+- Contraintes de doigts distincts et d'ordre croissant à droite/décroissant à gauche au sein d'un accord.
+- Sur 10 225 notes, amélioration du couple main+doigt de 50,72 % à 51,33 % et suppression de 4,15 % de configurations d'accord invalides.
+- Évaluation sur les 150 annotations humaines, soit 50 014 notes : 91,98 % main, 55,34 % doigt, 51,70 % conjoint.
+- Résultats séparés : 52,26 % conjoint sur les notes d'accord et 50,13 % en monodie ; aucune configuration d'accord invalide.
+- L'analyse humaine note par note est écartée pour cette phase ; l'évaluation reste entièrement automatique et reproductible.
+- Étape 3 validée le 3 août 2026 sur les métriques de main, doigt, accords/monodie et cohérence physique.
+- Limite assumée : les métriques exactes ne reconnaissent pas un doigté alternatif musicalement plausible s'il n'apparaît pas dans l'annotation comparée.
+- Prochaine étape : robustesse aux MIDI de performance, notamment attaques désynchronisées, pédale, notes tenues et regroupement d'accords.
+
+### Recherche main droite / main gauche — étape 4, attaques de performance
+
+- Regroupement ancré des attaques quasi simultanées, sans fusion transitive des arpèges.
+- Étude automatique de tolérances de 0 à 50 ms sur données intactes et accords désynchronisés jusqu'à ±20 ms.
+- Tolérance retenue : 40 ms, avec 51,33 % conjoint et 92,29 % main sur les séquences désynchronisées.
+- Conservation dans la sortie MIDI de l'attaque originale, de l'attaque regroupée et de l'identifiant de groupe.
+- Intégration automatique dans `separate:midi` et `finger:midi`.
+- Restent ouverts : pédale, notes tenues, vélocités et mesures longues/denses.
+
+### Recherche main droite / main gauche — étape 4, tenue et pédale
+
+- Mémoire de l'occupation physique des dix doigts dans le beam ; réutilisation interdite avant note-off.
+- Analyse séparée de la pédale CC64, avec seuil 0,5 pour les contrôleurs continus et binaires.
+- La résonance sous pédale ne bloque jamais un doigt après son note-off.
+- Vélocité conservée dans la sortie sans influence probabiliste non justifiée.
+- Deux MIDI réels de Clair de lune, 2 991 notes cumulées : aucun conflit de doigt tenu.
+- La version Disklavier valide les pédales continues ; 1 420 de ses 1 486 attaques surviennent pédale enfoncée.
+- Les validations de performance et de stabilité sont consignées ci-dessous ; l'étape 4 est désormais terminée.
+
+### Recherche main droite / main gauche — étape 4 validée
+
+- Benchmark reproductible sur trois MIDI réels : 80, 1 325 et 18 774 notes.
+- Temps respectifs : 0,26 s, 2,31 s et 32,93 s ; débit de 313 à 573 notes/s.
+- Beam effectivement plafonné à 100 états dans chaque cas.
+- Pics mémoire : 14,0 Mio, 51,7 Mio et 463,7 Mio ; les backpointers du cas long devront être surveillés lors du portage navigateur.
+- Test explicite de déterminisme ajouté : mêmes affectations, score et nombre d'états explorés à paramètres identiques.
+- Validation sans intervention humaine, conformément à la décision utilisateur : mains annotées de PIG, tests de jitter et d'invariants physiques, plus 2 991 notes de MIDI réels sans conflit de doigt tenu.
+- Rapport méthodologique : `research/fingering/STEP-4-MILESTONE-3.md`.
+- Prochaine étape : schéma portable et moteur TypeScript, avec parité stricte face au prototype JavaScript.
 
 - Node actuel : `v18.19.1`.
 - npm actuel : `9.2.0`.
@@ -403,3 +466,12 @@ Quatre espaces : Bibliothèque, Entraînement, Practice et Progression.
 - Création de `research/fingering/` avec documentation, règles de reproductibilité et script de récupération vérifié par SHA-256.
 - Graine expérimentale fixée à `20260803` et découpage de reproduction aligné sur l’article 2020.
 - PIG v1.2 a ensuite été obtenu par inscription personnelle ; son usage publié reste limité à la recherche académique non lucrative et le corpus demeure hors Git.
+
+
+## Mise à jour du 4 août 2026 — Doigtés étape 5
+
+- Schéma JSON v1 et provenance de modèle versionnés.
+- Moteur merged-output Viterbi porté dans `src/fingering/` pour le navigateur.
+- Modèle synthétique CC0 distribué pour les tests ; paramètres PIG maintenus hors Git.
+- Parité prototype/TypeScript validée sur chemins et scores numériques (tolérance 10⁻¹²).
+- Beam search conservé à 100 états pour les longs MIDI, conformément aux mesures de robustesse.
