@@ -286,7 +286,9 @@ Validation obtenue le 4 août 2026 : parité exacte des chemins, des états expl
 
 **Critère de validation :** un morceau peut être séparé, travaillé par main et corrigé sans altérer le MIDI original.
 
-Validation technique obtenue le 4 août 2026 et renforcée après essai utilisateur : les notes portent une identité déterministe liée au contenu MIDI, les corrections sont appliquées sur des copies puis stockées séparément dans IndexedDB, et le filtre de main pilote simultanément le piano-roll et le son. L’application locale utilise les paramètres PIG entraînés, regroupe les attaques à 40 ms et interdit les croisements lorsque les deux mains jouent simultanément ou tiennent encore leurs notes. La confiance de main provient de la marge des scores du modèle.
+Validation technique obtenue le 4 août 2026 et renforcée après essai utilisateur : les notes portent une identité déterministe liée au contenu MIDI, les corrections sont appliquées sur des copies puis stockées séparément dans IndexedDB, et le filtre de main pilote simultanément le piano-roll et le son. L’application locale utilise les paramètres PIG entraînés pour séparer les mains, regroupe les attaques à 40 ms et interdit les croisements lorsque les deux mains jouent simultanément ou tiennent encore leurs notes. Les doigts sont ensuite recalculés séparément par main avec FHMM3 réentraîné localement, plus performant que la composante doigt du modèle conjoint. La confiance de main provient de la marge des scores gauche/droite.
+
+Sur une annotation de chacune des 30 œuvres PIG de test, soit 10 225 notes, la chaîne finale atteint 92,98 % pour la main et 54,14 % pour le couple main-doigt exact face à cette annotation unique. Elle ne produit aucun croisement sur 2 297 accords mixtes. 12,24 % des notes sont signalées comme incertaines ; les autres atteignent 96,58 % de mains correctes. Sur les MIDI de contrôle, elle élimine les 16 croisements sur 16 observés initialement dans Westminster Chimes et n’en produit aucun sur les 254 accords mixtes de Flight of the Bumble Bee.
 
 ## Prochaine action
 
