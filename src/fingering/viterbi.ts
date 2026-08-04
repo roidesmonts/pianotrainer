@@ -13,9 +13,10 @@ export interface DecodeOptions {
   enforceChordConstraints?: boolean
   chordToleranceSeconds?: number
   enforceHeldFingerConstraints?: boolean
+  enforceHandOrder?: boolean
   onStep?: (progress: { index: number; stateCount: number; exploredStates: number }) => void
 }
-export interface DecodeResult { assignments: FingeringAssignment[]; score: number; exploredStates: number; pruned: boolean }
+export interface DecodeResult { assignments: FingeringAssignment[]; handConfidences: number[]; handMargins: number[]; score: number; exploredStates: number; pruned: boolean }
 
 const hands: Hand[] = ['left', 'right']
 const keyboardPosition = (pitch: number) => {
@@ -45,17 +46,35 @@ const validChordContinuation = (hand: Hand, previous: { midiPitch: number; onset
 type State = { score: number; leftIndex: number; leftFinger: number; rightIndex: number; rightFinger: number; leftHeld: number[]; rightHeld: number[] }
 type Pointer = { previousKey: string; hand: Hand; finger: Finger }
 
+const validHandOrder = (notes: FingeringNote[], state: State, index: number, hand: Hand, tolerance: number) => {
+  const oppositeIndex = hand === 'left' ? state.rightIndex : state.leftIndex
+  if (oppositeIndex < 0) return true
+  const note = notes[index], opposite = notes[oppositeIndex]
+  const onset = note.onsetSeconds ?? 0, oppositeOnset = opposite.onsetSeconds ?? 0
+  const oppositeOriginalOnset = opposite.originalOnsetSeconds ?? oppositeOnset
+  const oppositeEnd = opposite.offsetSeconds ?? (oppositeOriginalOnset + (opposite.durationSeconds ?? 0))
+  const simultaneous = Math.abs(onset - oppositeOnset) <= tolerance
+  if (!simultaneous && oppositeEnd <= (note.originalOnsetSeconds ?? onset)) return true
+  return hand === 'left' ? note.midiPitch <= opposite.midiPitch : note.midiPitch >= opposite.midiPitch
+}
+
+const confidenceFromMargin = (margin: number) => Number.isFinite(margin)
+  ? Math.max(.01, Math.min(.995, 1 / (1 + Math.exp(-margin / 3))))
+  : .995
+
 export function decodeMergedFingering(notes: FingeringNote[], model: PortableFingeringModel, options: DecodeOptions = {}): DecodeResult {
-  const { beamWidth = Infinity, enforceChordConstraints = true, chordToleranceSeconds = 0, enforceHeldFingerConstraints = false, onStep } = options
-  if (notes.length === 0) return { assignments: [], score: 0, exploredStates: 0, pruned: false }
+  const { beamWidth = Infinity, enforceChordConstraints = true, chordToleranceSeconds = 0, enforceHeldFingerConstraints = false, enforceHandOrder = false, onStep } = options
+  if (notes.length === 0) return { assignments: [], handConfidences: [], handMargins: [], score: 0, exploredStates: 0, pruned: false }
   notes.forEach((note) => { if (!Number.isInteger(note.midiPitch) || note.midiPitch < 0 || note.midiPitch > 127) throw new Error(`Hauteur MIDI invalide : ${note.midiPitch}`) })
   let states = new Map<string, State>([['-1,0,-1,0,0,0,0,0,0,0,0,0,0,0', { score: 0, leftIndex: -1, leftFinger: 0, rightIndex: -1, rightFinger: 0, leftHeld: Array(5).fill(0), rightHeld: Array(5).fill(0) }]])
   const backpointers: Map<string, Pointer>[] = []
+  const bestHandScores: Record<Hand, number>[] = []
   let exploredStates = 0
   let pruned = false
   for (let index = 0; index < notes.length; index += 1) {
     const next = new Map<string, State>()
     const pointers = new Map<string, Pointer>()
+    const handScores: Record<Hand, number> = { left: -Infinity, right: -Infinity }
     for (const [previousKey, state] of states) for (const hand of hands) for (let fingerValue = 1; fingerValue <= 5; fingerValue += 1) {
       const finger = fingerValue as Finger
       const physicalOnset = notes[index].onsetSeconds ?? 0
@@ -67,7 +86,9 @@ export function decodeMergedFingering(notes: FingeringNote[], model: PortableFin
       const previousFinger = (hand === 'left' ? state.leftFinger : state.rightFinger) as Finger
       const previous = previousIndex < 0 ? null : { midiPitch: notes[previousIndex].midiPitch, onsetSeconds: notes[previousIndex].onsetSeconds, finger: previousFinger }
       if (enforceChordConstraints && !validChordContinuation(hand, previous, notes[index], finger, chordToleranceSeconds)) continue
+      if (enforceHandOrder && !validHandOrder(notes, state, index, hand, chordToleranceSeconds)) continue
       const score = state.score + model.handSeparation.logHandPrior[hand] + emissionScore(model, hand, previous, notes[index], finger)
+      handScores[hand] = Math.max(handScores[hand], score)
       const candidate: State = { score, leftIndex: hand === 'left' ? index : state.leftIndex, leftFinger: hand === 'left' ? finger : state.leftFinger, rightIndex: hand === 'right' ? index : state.rightIndex, rightFinger: hand === 'right' ? finger : state.rightFinger, leftHeld, rightHeld }
       const originalOnset = notes[index].originalOnsetSeconds ?? physicalOnset
       const physicalEnd = notes[index].offsetSeconds ?? (originalOnset + (notes[index].durationSeconds ?? 0))
@@ -83,10 +104,11 @@ export function decodeMergedFingering(notes: FingeringNote[], model: PortableFin
       for (const key of pointers.keys()) if (!retainedKeys.has(key)) pointers.delete(key)
       pruned = true
     } else states = next
-    backpointers.push(pointers); onStep?.({ index, stateCount: states.size, exploredStates })
+    backpointers.push(pointers); bestHandScores.push(handScores); onStep?.({ index, stateCount: states.size, exploredStates })
   }
   let [bestKey, bestState] = [...states.entries()].sort((a, b) => b[1].score - a[1].score || a[0].localeCompare(b[0]))[0]
   const assignments = Array<FingeringAssignment>(notes.length)
   for (let index = notes.length - 1; index >= 0; index -= 1) { const pointer = backpointers[index].get(bestKey)!; assignments[index] = { hand: pointer.hand, finger: pointer.finger }; bestKey = pointer.previousKey }
-  return { assignments, score: bestState.score, exploredStates, pruned }
+  const handMargins = assignments.map(({ hand }, index) => bestHandScores[index][hand] - bestHandScores[index][hand === 'left' ? 'right' : 'left'])
+  return { assignments, handMargins, handConfidences: handMargins.map(confidenceFromMargin), score: bestState.score, exploredStates, pruned }
 }

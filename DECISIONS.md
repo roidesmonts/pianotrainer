@@ -84,10 +84,11 @@ Un classement public exigera une validation serveur des résultats. Les scores p
 ## Séparation des mains et doigtés
 
 - Le chantier est défini dans `plan-doigtes.md`.
-- La cible est un merged-output HMM entraîné sur des annotations réelles et décodé par Viterbi.
+- La séparation des mains utilise le merged-output HMM entraîné sur PIG et décodé par Viterbi avec des contraintes physiques inter-main.
+- Le doigté final utilise FHMM3 réentraîné séparément par main, plus performant que la composante doigt du modèle conjoint.
 - Une heuristique locale ou une simple frontière de registre ne constitue qu’une baseline, pas la solution finale.
-- L’entraînement reste hors ligne ; seule l’inférence validée devra être portée en TypeScript.
-- Aucun modèle ne sera intégré avant reproduction des références, évaluation sur des œuvres séparées et clarification des droits du corpus et des paramètres appris.
+- L’application est d’abord un outil local : les paramètres PIG et le binaire FHMM3 peuvent être servis depuis les artefacts locaux ignorés par Git.
+- La séparation s’exécute en TypeScript ; FHMM3 s’exécute côté serveur Vite local. Une future publication ne doit pas dégrader cette chaîne locale et sera traitée séparément si elle redevient prioritaire.
 
 ## Documentation
 

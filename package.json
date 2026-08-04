@@ -19,7 +19,8 @@
     "evaluate:joint": "node research/fingering/scripts/evaluate-joint-fingering.mjs",
     "finger:midi": "node research/fingering/scripts/finger-midi.mjs",
     "evaluate:robustness": "node research/fingering/scripts/evaluate-performance-robustness.mjs",
-    "benchmark:fingering": "node research/fingering/scripts/benchmark-midi-fingering.mjs"
+    "benchmark:fingering": "node research/fingering/scripts/benchmark-midi-fingering.mjs",
+    "evaluate:interface-fingering": "node research/fingering/scripts/evaluate-interface-model.mjs"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",

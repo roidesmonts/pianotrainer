@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { instrument, type Player } from 'soundfont-player'
 import type { MorceauMidi, NoteMidi } from '../types/midi'
+import type { Finger, Hand } from '../fingering/model'
+import { applyFingeringCorrections } from '../fingering/corrections'
+import { deleteFingeringCorrection, listFingeringCorrections, saveFingeringCorrection } from '../storage/fingeringCorrections'
 
 const touchesNoires = new Set([1, 3, 6, 8, 10])
 const couleurs = ['#ef4b4b', '#ef4b4b', '#f28c28', '#f28c28', '#f4d43d', '#70d35b', '#70d35b', '#35cbbb', '#35cbbb', '#6876e8', '#6876e8', '#d94fc3']
@@ -28,7 +31,7 @@ function croix(ctx: CanvasRenderingContext2D, x: number, y: number, taille: numb
   ctx.moveTo(x + taille, y - taille); ctx.lineTo(x - taille, y + taille); ctx.stroke()
 }
 
-function dessiner(canvas: HTMLCanvasElement, morceau: MorceauMidi, position: number, pps: number, debut: number, fin: number) {
+function dessiner(canvas: HTMLCanvasElement, morceau: MorceauMidi, notes: NoteMidi[], position: number, pps: number, debut: number, fin: number, afficherDoigtes: boolean, afficherIncertains: boolean) {
   const rect = canvas.getBoundingClientRect(), ratio = window.devicePixelRatio || 1
   canvas.width = Math.round(rect.width * ratio); canvas.height = Math.round(rect.height * ratio)
   const ctx = canvas.getContext('2d'); if (!ctx) return
@@ -55,18 +58,24 @@ function dessiner(canvas: HTMLCanvasElement, morceau: MorceauMidi, position: num
     ctx.fillStyle = '#74839a'; ctx.font = '10px system-ui'; ctx.textAlign = 'left'; ctx.fillText(`${mesure.numero}`, 5, Math.max(11, y - 4))
   })
 
-  const visibles = morceau.notes.filter(note => note.midi >= debut && note.midi < fin && note.temps + note.duree >= position && note.temps <= position + frappeY / pps)
+  const visibles = notes.filter(note => note.midi >= debut && note.midi < fin && note.temps + note.duree >= position && note.temps <= position + frappeY / pps)
   visibles.forEach(note => {
     const g = geo.touches.get(note.midi); if (!g) return
     const bas = frappeY - (note.temps - position) * pps, hauteur = Math.max(3, note.duree * pps), y = bas - hauteur
     ctx.fillStyle = couleurs[note.midi % 12]; ctx.globalAlpha = .92; ctx.fillRect(g.x + 1, y, Math.max(2, g.largeur - 2), hauteur); ctx.globalAlpha = 1
-    ctx.strokeStyle = '#ffffff55'; ctx.strokeRect(g.x + 1.5, y + .5, Math.max(1, g.largeur - 3), Math.max(1, hauteur - 1))
+    const incertaine = note.confiance < .6
+    ctx.setLineDash(incertaine && afficherIncertains ? [4, 3] : [])
+    ctx.strokeStyle = note.origineDoigte === 'manual' ? '#8ff0c8' : incertaine && afficherIncertains ? '#ffc66d' : '#ffffff55'
+    ctx.lineWidth = incertaine && afficherIncertains ? 2 : 1
+    ctx.strokeRect(g.x + 1.5, y + .5, Math.max(1, g.largeur - 3), Math.max(1, hauteur - 1)); ctx.setLineDash([]); ctx.lineWidth = 1
     if (touchesNoires.has(note.midi % 12) && hauteur >= 12) croix(ctx, g.x + g.largeur / 2, y + Math.min(10, hauteur / 2), Math.min(3.5, g.largeur / 5))
-    if (hauteur >= 22 && g.largeur >= 19) { ctx.fillStyle = note.midi % 12 === 4 ? '#302b08' : '#101522'; ctx.font = `600 ${Math.min(11, g.largeur * .25)}px system-ui`; ctx.textAlign = 'center'; ctx.fillText(noms[note.midi % 12], g.x + g.largeur / 2, y + hauteur / 2 + 4, g.largeur - 4) }
+    if (afficherDoigtes && hauteur >= 13 && g.largeur >= 11) { ctx.fillStyle = '#09111f'; ctx.font = `900 ${Math.min(13, Math.max(9, g.largeur * .38))}px system-ui`; ctx.textAlign = 'center'; ctx.fillText(String(note.doigt), g.x + g.largeur / 2, y + Math.min(14, hauteur - 3), g.largeur - 3) }
+    else if (hauteur >= 22 && g.largeur >= 19) { ctx.fillStyle = note.midi % 12 === 4 ? '#302b08' : '#101522'; ctx.font = `600 ${Math.min(11, g.largeur * .25)}px system-ui`; ctx.textAlign = 'center'; ctx.fillText(noms[note.midi % 12], g.x + g.largeur / 2, y + hauteur / 2 + 4, g.largeur - 4) }
+    if (incertaine && afficherIncertains && hauteur >= 25) { ctx.fillStyle = '#ffc66d'; ctx.font = '900 10px system-ui'; ctx.textAlign = 'center'; ctx.fillText('?', g.x + g.largeur / 2, y + hauteur - 4) }
   })
 
   ctx.shadowColor = '#9fdcff'; ctx.shadowBlur = 10; ctx.strokeStyle = '#c2e9ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, frappeY); ctx.lineTo(w, frappeY); ctx.stroke(); ctx.shadowBlur = 0
-  const actives = morceau.notes.filter(n => n.midi >= debut && n.midi < fin && n.temps <= position && n.temps + n.duree > position)
+  const actives = notes.filter(n => n.midi >= debut && n.midi < fin && n.temps <= position && n.temps + n.duree > position)
   geo.blanches.forEach(midi => { const g = geo.touches.get(midi)!; const active = actives.find(n => n.midi === midi); ctx.fillStyle = active ? couleurs[midi % 12] : '#eef1f5'; ctx.fillRect(g.x, frappeY, g.largeur, clavierH); ctx.strokeStyle = '#69768a'; ctx.strokeRect(g.x, frappeY, g.largeur, clavierH); if (g.largeur > 23) { ctx.fillStyle = '#303847'; ctx.font = '10px system-ui'; ctx.textAlign = 'center'; ctx.fillText(noms[midi % 12], g.x + g.largeur / 2, h - 9) } })
   geo.notes.filter(n => touchesNoires.has(n % 12)).forEach(midi => { const g = geo.touches.get(midi)!; const active = actives.find(n => n.midi === midi); ctx.fillStyle = active ? couleurs[midi % 12] : '#111827'; ctx.fillRect(g.x, frappeY, g.largeur, clavierH * .64); ctx.strokeStyle = '#02050b'; ctx.strokeRect(g.x, frappeY, g.largeur, clavierH * .64) })
 }
@@ -84,17 +93,26 @@ export function PianoRollStatic({ morceau }: { morceau: MorceauMidi }) {
   const [sonActif, setSonActif] = useState(true), [timbre, setTimbre] = useState<'synthese' | 'piano'>('synthese'), [chargementPiano, setChargementPiano] = useState(false), [erreurPiano, setErreurPiano] = useState(false)
   const [volume, setVolume] = useState(.75), [vitesse, setVitesse] = useState(1)
   const [clavierComplet, setClavierComplet] = useState(false)
+  const [notes, setNotes] = useState(morceau.notes), [main, setMain] = useState<'both' | Hand>('both')
+  const [afficherDoigtes, setAfficherDoigtes] = useState(true), [afficherIncertains, setAfficherIncertains] = useState(true)
+  const [erreurCorrection, setErreurCorrection] = useState('')
+  const notesFiltrees = useMemo(() => main === 'both' ? notes : notes.filter(note => note.main === main), [notes, main])
   const notesAudio = useMemo(() => {
     const uniques = new Map<string, NoteMidi>()
-    morceau.notes.filter(note => note.midi >= 21 && note.midi <= 108).forEach(note => {
+    notesFiltrees.filter(note => note.midi >= 21 && note.midi <= 108).forEach(note => {
       const cle = `${note.ticks}:${note.midi}`, existante = uniques.get(cle)
       if (!existante || note.velocite > existante.velocite) uniques.set(cle, note)
     })
     return [...uniques.values()].sort((a, b) => a.temps - b.temps || a.midi - b.midi)
-  }, [morceau])
-  const notesLecture = timbre === 'piano' ? notesAudio : morceau.notes
+  }, [notesFiltrees])
+  const notesLecture = timbre === 'piano' ? notesAudio : notesFiltrees
+  useEffect(() => {
+    let low = 0, high = notesLecture.length
+    while (low < high) { const middle = (low + high) >> 1; if (notesLecture[middle].temps < positionRef.current) low = middle + 1; else high = middle }
+    prochaineNoteRef.current = low; couperVoix()
+  }, [notesLecture])
   const plage = useMemo(() => { if (clavierComplet) return { debut: 21, fin: 109 }; const min = morceau.etendue?.min ?? 48, max = morceau.etendue?.max ?? 83; if (max - min > 60) return { debut: Math.max(0, min), fin: Math.min(128, max + 1) }; let debut = Math.floor(min / 12) * 12, fin = Math.ceil((max + 1) / 12) * 12; if (fin - debut < 24) { debut -= 12; fin += 12 } return { debut: Math.max(0, debut), fin: Math.min(128, fin) } }, [morceau, clavierComplet])
-  useEffect(() => { const canvas = ref.current; if (!canvas) return; const rendu = () => dessiner(canvas, morceau, position, pps, plage.debut, plage.fin); const observer = new ResizeObserver(rendu); observer.observe(canvas); rendu(); return () => observer.disconnect() }, [morceau, position, pps, plage])
+  useEffect(() => { const canvas = ref.current; if (!canvas) return; const rendu = () => dessiner(canvas, morceau, notesFiltrees, position, pps, plage.debut, plage.fin, afficherDoigtes, afficherIncertains); const observer = new ResizeObserver(rendu); observer.observe(canvas); rendu(); return () => observer.disconnect() }, [morceau, notesFiltrees, position, pps, plage, afficherDoigtes, afficherIncertains])
   useEffect(() => { positionRef.current = position }, [position])
   useEffect(() => {
     if (!lecture) return
@@ -111,7 +129,10 @@ export function PianoRollStatic({ morceau }: { morceau: MorceauMidi }) {
     return () => cancelAnimationFrame(animation)
   }, [lecture, morceau.duree, vitesse])
   useEffect(() => {
-    setLecture(false); setPosition(0); ancreMusicaleRef.current = 0
+    let cancelled = false
+    setLecture(false); setPosition(0); setMain('both'); setNotes(morceau.notes); setErreurCorrection(''); ancreMusicaleRef.current = 0
+    listFingeringCorrections(morceau.identite).then((corrections) => { if (!cancelled) setNotes(applyFingeringCorrections(morceau.notes, corrections)) }).catch(() => { if (!cancelled) setErreurCorrection('Les corrections enregistrées n’ont pas pu être chargées.') })
+    return () => { cancelled = true }
   }, [morceau])
   useEffect(() => {
     if (sortieRef.current) sortieRef.current.gain.value = volume
@@ -157,7 +178,7 @@ export function PianoRollStatic({ morceau }: { morceau: MorceauMidi }) {
     if (pianoRef.current || chargementPiano) return
     setChargementPiano(true); setErreurPiano(false)
     try {
-      pianoRef.current = await instrument(audio, 'acoustic_grand_piano', { soundfont: 'FluidR3_GM', format: 'mp3', destination: sortie, notes: [...new Set(notesAudio.map(note => nomSoundfont(note.midi)))] })
+      pianoRef.current = await instrument(audio, 'acoustic_grand_piano', { soundfont: 'FluidR3_GM', format: 'mp3', destination: sortie, notes: [...new Set(notes.map(note => nomSoundfont(note.midi)))] })
     } catch { setErreurPiano(true); setSonActif(false) }
     finally { setChargementPiano(false) }
   }
@@ -211,9 +232,30 @@ export function PianoRollStatic({ morceau }: { morceau: MorceauMidi }) {
     if (lecture && audioRef.current) ancreAudioRef.current = audioRef.current.currentTime
   }
 
-  return <section className="roll-step"><header><div><p className="eyebrow">Étape 5 · Son synchronisé</p><h2>Lecture visuelle du morceau</h2></div><div className="roll-readout"><strong>{position.toFixed(2)} s</strong><span>{noms[plage.debut % 12]}{Math.floor(plage.debut / 12) - 1} → {noms[(plage.fin - 1) % 12]}{Math.floor((plage.fin - 1) / 12) - 1}</span></div></header>
+  async function corriger(note: NoteMidi, hand: Hand, finger: Finger) {
+    const correction = { pieceId: morceau.identite, noteId: note.id, hand, finger, updatedAt: new Date().toISOString() }
+    setNotes(current => applyFingeringCorrections(current, [correction])); setErreurCorrection('')
+    try { await saveFingeringCorrection(correction) }
+    catch { setErreurCorrection('La correction est appliquée, mais sa sauvegarde locale a échoué.') }
+  }
+
+  async function restaurer(note: NoteMidi) {
+    const originale = morceau.notes.find(candidate => candidate.id === note.id)
+    if (originale) setNotes(current => current.map(candidate => candidate.id === note.id ? originale : candidate))
+    setErreurCorrection('')
+    try { await deleteFingeringCorrection(morceau.identite, note.id) }
+    catch { setErreurCorrection('La proposition est restaurée, mais la correction enregistrée n’a pas pu être supprimée.') }
+  }
+
+  const notesAEditer = notes.filter(note => note.temps >= Math.max(0, position - .05) && note.temps <= position + 4).slice(0, 12)
+  const incertaines = notes.filter(note => note.confiance < .6).length
+  const manuelles = notes.filter(note => note.origineDoigte === 'manual').length
+
+  return <section className="roll-step"><header><div><p className="eyebrow">Étape 6 · Mains et doigtés</p><h2>Lecture visuelle du morceau</h2></div><div className="roll-readout"><strong>{position.toFixed(2)} s</strong><span>{noms[plage.debut % 12]}{Math.floor(plage.debut / 12) - 1} → {noms[(plage.fin - 1) % 12]}{Math.floor((plage.fin - 1) / 12) - 1}</span></div></header>
     <canvas ref={ref} className="roll-canvas" title="Faites défiler ou glissez verticalement pour naviguer dans le morceau" />
+    <div className="fingering-toolbar"><nav aria-label="Main travaillée"><button className={main === 'both' ? 'active' : ''} onClick={() => { couperVoix(); setMain('both') }}>Deux mains</button><button className={main === 'right' ? 'active' : ''} onClick={() => { couperVoix(); setMain('right') }}>Main droite</button><button className={main === 'left' ? 'active' : ''} onClick={() => { couperVoix(); setMain('left') }}>Main gauche</button></nav><div><button className={afficherDoigtes ? 'active' : ''} onClick={() => setAfficherDoigtes(value => !value)}>Doigts {afficherDoigtes ? 'visibles' : 'masqués'}</button><button className={afficherIncertains ? 'warning active' : ''} onClick={() => setAfficherIncertains(value => !value)}>{incertaines} incertaine{incertaines !== 1 ? 's' : ''}</button></div><small>{manuelles} correction{manuelles !== 1 ? 's' : ''} manuelle{manuelles !== 1 ? 's' : ''}</small></div>
     <div className="transport"><button className={lecture ? 'pause' : 'play'} disabled={chargementPiano} onClick={() => void basculerLecture()} aria-label={lecture ? 'Mettre en pause' : 'Lire'}><span aria-hidden="true">{lecture ? 'Ⅱ' : '▶'}</span>{chargementPiano ? 'Chargement du piano…' : lecture ? 'Pause' : position >= morceau.duree ? 'Rejouer' : 'Lecture'}</button><button className="secondary" onClick={arreter} disabled={position === 0 && !lecture}>■ Arrêt</button><button className="secondary" onClick={() => { couperVoix(); setSonActif(actif => !actif); prochaineNoteRef.current = indexDepuis(position) }}>{sonActif ? 'Son activé' : 'Activer le son'}</button><label className="volume">Son<select disabled={lecture} value={timbre} onChange={e => { couperVoix(); setErreurPiano(false); setTimbre(e.target.value as 'synthese' | 'piano') }}><option value="synthese">Synthèse (fiable)</option><option value="piano">Piano échantillonné</option></select></label><button className="secondary keyboard-toggle" onClick={() => setClavierComplet(complet => !complet)}>{clavierComplet ? 'Clavier : complet' : 'Clavier : mini'}</button><label className="volume">Volume<input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => setVolume(Number(e.target.value))} /></label></div>
     <div className="roll-controls"><label>Position dans le morceau<input type="range" min="0" max={morceau.duree} step="0.01" value={position} onChange={e => deplacer(Number(e.target.value))} /></label><label>Tempo<input type="range" min="0.25" max="1.5" step="0.05" value={vitesse} onChange={e => changerVitesse(Number(e.target.value))} /><span>{Math.round(vitesse * 100)} %</span></label><label>Échelle temporelle<input type="range" min="45" max="220" step="5" value={pps} onChange={e => setPps(Number(e.target.value))} /><span>{pps} px/s</span></label></div>
+    <section className="fingering-editor"><header><div><h3>Corriger les propositions</h3><p>Notes des quatre prochaines secondes · contour orange : séparation de main incertaine · vert : correction enregistrée.</p></div><small>Mains : modèle PIG contraint · doigts : FHMM3 réentraîné localement.</small></header>{erreurCorrection && <p className="fingering-error" role="alert">{erreurCorrection}</p>}<div className="fingering-note-list">{notesAEditer.length ? notesAEditer.map(note => <article className={`${note.confiance < .6 ? 'uncertain' : ''} ${note.origineDoigte === 'manual' ? 'manual' : ''}`} key={note.id}><button className="note-time" onClick={() => deplacer(note.temps)}><strong>{note.nom}</strong><small>{note.temps.toFixed(2)} s</small></button><label>Main<select value={note.main} onChange={event => void corriger(note, event.target.value as Hand, note.doigt)}><option value="right">Droite</option><option value="left">Gauche</option></select></label><label>Doigt<select value={note.doigt} onChange={event => void corriger(note, note.main, Number(event.target.value) as Finger)}>{([1,2,3,4,5] as Finger[]).map(finger => <option key={finger} value={finger}>{finger}</option>)}</select></label><span title={`Confiance de séparation de main ${Math.round(note.confiance * 100)} %`}>{Math.round(note.confiance * 100)} %</span><button className="secondary" disabled={note.origineDoigte !== 'manual'} onClick={() => void restaurer(note)}>Restaurer</button></article>) : <p>Aucune attaque dans les quatre prochaines secondes.</p>}</div></section>
   </section>
 }

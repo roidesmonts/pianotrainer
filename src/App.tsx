@@ -42,7 +42,7 @@ export default function App() {
 
   async function analyser(donnees: ArrayBuffer, nom: string) {
     setCharge(true); setErreur('')
-    try { setMorceau(analyserMidi(donnees, nom)); setFichier(nom) }
+    try { setMorceau(await analyserMidi(donnees, nom)); setFichier(nom) }
     catch (e) { setMorceau(null); setErreur(e instanceof Error ? e.message : 'Analyse impossible.') }
     finally { setCharge(false) }
   }
@@ -90,7 +90,7 @@ function Inspecteur({ morceau, fichier }: { morceau: MorceauMidi; fichier: strin
     <section className="metrics"><Metric label="Durée" value={duree(morceau.duree)} /><Metric label="Pistes" value={morceau.pistes.length} /><Metric label="Notes" value={morceau.notes.length.toLocaleString('fr-FR')} /><Metric label="Tempo initial" value={`${morceau.tempoInitial.toFixed(1)} BPM`} /><Metric label="Étendue" value={morceau.etendue ? `${morceau.etendue.nomMin} – ${morceau.etendue.nomMax}` : '—'} /><Metric label="Mesures" value={morceau.mesures.length} /></section>
     <div className="detail-grid"><section className="panel tracks"><h3>Pistes</h3>{morceau.pistes.map(p => <div className="row" key={p.id}><i>{p.index + 1}</i><span><strong>{p.nom}</strong><small>Canal {p.canal + 1} · {p.instrument}</small></span><em>{p.nombreNotes} notes</em></div>)}</section>
       <EventPanel titre="Changements de tempo" events={morceau.tempos.map(t => [sec(t.temps) + ' s', t.bpm.toFixed(2) + ' BPM'])} /><EventPanel titre="Signatures rythmiques" events={morceau.signaturesRythmiques.map(s => [sec(s.temps) + ' s', `${s.numerateur}/${s.denominateur}`])} /></div>
-    <section className="panel"><div className="panel-title"><h3>30 premières notes</h3><small>Triées par date musicale</small></div><div className="table-wrap"><table><thead><tr><th>#</th><th>Note</th><th>MIDI</th><th>Début (s)</th><th>Durée (s)</th><th>Vélocité</th><th>Piste</th></tr></thead><tbody>{morceau.notes.slice(0, 30).map((n, i) => <tr key={`${n.pisteId}-${n.ticks}-${n.midi}-${i}`}><td>{i + 1}</td><td><strong>{n.nom}</strong></td><td>{n.midi}</td><td>{sec(n.temps)}</td><td>{sec(n.duree)}</td><td>{Math.round(n.velocite * 127)}</td><td>{n.pisteIndex + 1}</td></tr>)}</tbody></table></div></section></div>
+    <section className="panel"><div className="panel-title"><h3>30 premières notes</h3><small>Triées par date musicale</small></div><div className="table-wrap"><table><thead><tr><th>#</th><th>Note</th><th>MIDI</th><th>Début (s)</th><th>Durée (s)</th><th>Main</th><th>Doigt</th><th>Confiance</th><th>Piste</th></tr></thead><tbody>{morceau.notes.slice(0, 30).map((n, i) => <tr key={n.id}><td>{i + 1}</td><td><strong>{n.nom}</strong></td><td>{n.midi}</td><td>{sec(n.temps)}</td><td>{sec(n.duree)}</td><td>{n.main === 'right' ? 'Droite' : 'Gauche'}</td><td><strong>{n.doigt}</strong></td><td>{Math.round(n.confiance * 100)} %</td><td>{n.pisteIndex + 1}</td></tr>)}</tbody></table></div></section></div>
 }
 function Metric({ label, value }: { label: string; value: string | number }) { return <article><span>{label}</span><strong>{value}</strong></article> }
 function EventPanel({ titre, events }: { titre: string; events: string[][] }) { return <section className="panel events"><h3>{titre}</h3>{events.map((e, i) => <div key={i}><span>{e[0]}</span><strong>{e[1]}</strong></div>)}</section> }

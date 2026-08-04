@@ -475,3 +475,16 @@ Quatre espaces : Bibliothèque, Entraînement, Practice et Progression.
 - Modèle synthétique CC0 distribué pour les tests ; paramètres PIG maintenus hors Git.
 - Parité prototype/TypeScript validée sur chemins et scores numériques (tolérance 10⁻¹²).
 - Beam search conservé à 100 états pour les longs MIDI, conformément aux mesures de robustesse.
+
+## Mise à jour du 4 août 2026 — Doigtés étape 6
+
+- Notes MIDI enrichies avec identité stable, main, doigt, confiance et origine.
+- Modèle PIG local chargé à la demande, attaques regroupées à 40 ms et longs morceaux décodés par fenêtres chevauchantes.
+- Doigts recalculés après séparation par FHMM3 réentraîné localement, plus performant que la composante doigt du modèle conjoint.
+- Contrainte inter-main : aucune gauche au-dessus de la droite sur les attaques simultanées ou les notes opposées encore tenues.
+- Piano-roll et audio filtrables ensemble par main droite ou gauche.
+- Doigts affichables, estimations incertaines signalées et corrections manuelles restaurables.
+- Corrections persistées séparément dans IndexedDB sans mutation des événements MIDI sources.
+- Confiance de séparation issue de la marge des scores gauche/droite, à la place de l’ancien indicateur de registre.
+- Évaluation de la chaîne finale sur 10 225 notes : 92,98 % pour la main, 54,14 % pour le couple exact, 0 croisement sur 2 297 accords mixtes et 12,24 % de notes signalées.
+- Rapport détaillé : `research/fingering/STEP-6-INTERFACE.md`.

@@ -275,17 +275,19 @@ Validation automatique obtenue le 3 août 2026 : de 313 à 573 notes/s sur 80, 1
 
 Validation obtenue le 4 août 2026 : parité exacte des chemins, des états explorés et de l’élagage sur trois fixtures ; écart de score inférieur à 10⁻¹². Le modèle PIG reste local faute de droits de redistribution clarifiés ; l’artefact versionné est entraîné sur des fixtures synthétiques originales CC0 et sert uniquement à valider la chaîne portable.
 
-### Étape 6 — Interface Piano Trainer
+### Étape 6 — Interface Piano Trainer — VALIDÉE
 
-- [ ] Étendre le modèle interne des notes avec main, doigt, confiance et origine.
-- [ ] Ajouter l’affichage optionnel des doigts.
-- [ ] Ajouter le filtrage gauche/droite pour l’affichage et le son.
-- [ ] Afficher les zones incertaines.
-- [ ] Permettre les corrections manuelles.
-- [ ] Persister les corrections avec une identité stable du morceau et des notes.
+- [x] Étendre le modèle interne des notes avec main, doigt, confiance et origine.
+- [x] Ajouter l’affichage optionnel des doigts.
+- [x] Ajouter le filtrage gauche/droite pour l’affichage et le son.
+- [x] Afficher les zones incertaines.
+- [x] Permettre les corrections manuelles.
+- [x] Persister les corrections avec une identité stable du morceau et des notes.
 
 **Critère de validation :** un morceau peut être séparé, travaillé par main et corrigé sans altérer le MIDI original.
 
+Validation technique obtenue le 4 août 2026 et renforcée après essai utilisateur : les notes portent une identité déterministe liée au contenu MIDI, les corrections sont appliquées sur des copies puis stockées séparément dans IndexedDB, et le filtre de main pilote simultanément le piano-roll et le son. L’application locale utilise les paramètres PIG entraînés, regroupe les attaques à 40 ms et interdit les croisements lorsque les deux mains jouent simultanément ou tiennent encore leurs notes. La confiance de main provient de la marge des scores du modèle.
+
 ## Prochaine action
 
-Commencer l'étape 5 : définir le schéma JSON portable, préciser les conditions de distribution des paramètres, puis porter le décodage en TypeScript avec des fixtures communes garantissant les mêmes chemins et scores que le prototype expérimental.
+Continuer la validation ergonomique sur les morceaux réellement travaillés et consigner les corrections résiduelles pour guider les prochains raffinements du modèle local.

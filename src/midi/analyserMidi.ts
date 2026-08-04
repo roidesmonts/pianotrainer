@@ -4,6 +4,12 @@ import type { MesureMidi, MorceauMidi, SignatureRythmique } from '../types/midi'
 const noms = ['Do', 'Do♯', 'Ré', 'Ré♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si']
 const nomNote = (midi: number) => `${noms[midi % 12]}${Math.floor(midi / 12) - 1}`
 
+const hashBuffer = (buffer: ArrayBuffer) => {
+  let hash = 2166136261
+  for (const byte of new Uint8Array(buffer)) { hash ^= byte; hash = Math.imul(hash, 16777619) }
+  return (hash >>> 0).toString(36)
+}
+
 const normaliserSignatures = (midi: Midi): SignatureRythmique[] => {
   const signatures = midi.header.timeSignatures.map((s) => ({
     numerateur: s.timeSignature[0] ?? 4,
@@ -35,7 +41,7 @@ const construireMesures = (midi: Midi, signatures: SignatureRythmique[]): Mesure
   return mesures
 }
 
-export const analyserMidi = (donnees: ArrayBuffer, nomFichier: string): MorceauMidi => {
+export const analyserMidi = async (donnees: ArrayBuffer, nomFichier: string): Promise<MorceauMidi> => {
   let midi: Midi
   try { midi = new Midi(donnees) }
   catch { throw new Error(`« ${nomFichier} » ne semble pas être un fichier MIDI valide.`) }
@@ -45,11 +51,21 @@ export const analyserMidi = (donnees: ArrayBuffer, nomFichier: string): MorceauM
     canal: piste.channel, instrument: piste.instrument.name || `Programme ${piste.instrument.number}`,
     nombreNotes: piste.notes.length,
   }))
-  const notes = midi.tracks.flatMap((piste, pisteIndex) => piste.notes.map((note) => ({
+  const identite = `midi-v1-${hashBuffer(donnees)}`
+  const duplicates = new Map<string, number>()
+  const notesBrutes = midi.tracks.flatMap((piste, pisteIndex) => piste.notes.map((note) => {
+    const eventKey = `${pisteIndex}:${note.ticks}:${note.midi}`
+    const duplicate = duplicates.get(eventKey) ?? 0
+    duplicates.set(eventKey, duplicate + 1)
+    return ({
+    id: `${identite}:${eventKey}:${duplicate}`,
     midi: note.midi, nom: nomNote(note.midi), temps: note.time, duree: note.duration,
     velocite: note.velocity, ticks: note.ticks, dureeTicks: note.durationTicks,
-    pisteId: `piste-${pisteIndex}`, pisteIndex,
-  }))).sort((a, b) => a.temps - b.temps || a.midi - b.midi || a.pisteIndex - b.pisteIndex)
+    pisteId: `piste-${pisteIndex}`, pisteIndex, main: 'right' as const, doigt: 1 as const,
+    confiance: 0, origineDoigte: 'heuristic' as const,
+  })})).sort((a, b) => a.temps - b.temps || a.midi - b.midi || a.pisteIndex - b.pisteIndex)
+  const { assignerDoigtes } = await import('../fingering/assigner')
+  const notes = await assignerDoigtes(notesBrutes)
   const hauteurs = notes.map((note) => note.midi)
   const min = hauteurs.length ? Math.min(...hauteurs) : 0
   const max = hauteurs.length ? Math.max(...hauteurs) : 0
@@ -60,7 +76,7 @@ export const analyserMidi = (donnees: ArrayBuffer, nomFichier: string): MorceauM
   })) : [{ bpm: 120, ticks: 0, temps: 0 }]
 
   return {
-    nomInterne: midi.name, duree: midi.duration, dureeTicks: midi.durationTicks,
+    identite, nomInterne: midi.name, duree: midi.duration, dureeTicks: midi.durationTicks,
     ppq: midi.header.ppq, tempoInitial: tempos[0].bpm, tempos, signaturesRythmiques,
     mesures: construireMesures(midi, signaturesRythmiques), pistes, notes,
     etendue: hauteurs.length ? { min, max, nomMin: nomNote(min), nomMax: nomNote(max) } : null,
