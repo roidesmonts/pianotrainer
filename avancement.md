@@ -496,10 +496,27 @@ Quatre espaces : Bibliothèque, Entraînement, Practice et Progression.
 - Génération exhaustive des groupes possibles afin d’éviter exactement la répétition de deux groupes consécutifs.
 - Records de Practice désormais relus depuis l’historique IndexedDB, avec génération d’identifiants compatible avec les navigateurs ne proposant pas `crypto.randomUUID`.
 - Progression du Contre-la-montre filtrée par durée configurée (1, 3 ou 5 minutes), en plus du nombre de notes.
-- Pour chaque format de Long Run (1, 3 ou 5 notes), un niveau est considéré franchi lorsqu’une partie atteint le niveau suivant.
-- Après **5 franchissements** d’un même niveau, les parties suivantes commencent directement au niveau supérieur ; les parties arrêtées manuellement ne participent pas au déblocage.
+- Pour chaque format de Long Run (1, 3 ou 5 notes), un niveau ne compte pour le déblocage que s’il est terminé entièrement sans aucune faute.
+- Après **5 réussites parfaites** d’un même niveau, les parties suivantes commencent directement au niveau supérieur. Une partie arrêtée conserve uniquement les niveaux déjà terminés sans faute.
 - Le déblocage est recalculé au chargement de l’historique et immédiatement après l’enregistrement d’une partie, afin que le bouton **Rejouer** profite sans rechargement du nouveau niveau de départ.
 - Le score de départ reproduit les points théoriquement gagnés par la voie régulière sur chaque niveau sauté : `plancher(30 secondes / délai du niveau)`, puis somme de tous les niveaux antérieurs.
 - Exemples au premier niveau : 10 points pour 1 note à 3 secondes, 5 points pour 3 notes à 6 secondes et 3 points pour 5 notes à 10 secondes.
 - Le niveau, le délai et le total des points acquis sont affichés avant le démarrage de la partie.
 - Validation technique : `npm run build` réussi après l’implémentation.
+
+## Mise à jour du 6 août 2026 — Interface mobile de Practice
+
+- La carte de jeu mobile de **Long Run** regroupe désormais, sans défilement vers le panneau inférieur, le score, le niveau courant, les vies et le record.
+- En mode une note, ces informations sont centrées à gauche du carré coloré, tandis que les boutons de réponse restent à droite. Leur bord supérieur est aligné avec celui du carré.
+- Le carré coloré et sa jauge sont légèrement réduits sous 600 px afin de conserver les trois zones sur une seule largeur de téléphone.
+- Pour les formats 3 et 5 notes, le tableau de bord devient une ligne compacte au-dessus des cartes dans le même encart.
+- Les doublons du score, du niveau, des vies et du record sont masqués dans le panneau inférieur mobile, tout en restant disponibles dans la vue bureau.
+- Le texte sous **Démarrer** ne répète plus le nombre de vies en Long Run.
+- Le **Contre-la-montre** reprend la même logique mobile avec le score et le record à gauche du carré ; leurs doublons sont également masqués sur mobile.
+- Le panneau Contre-la-montre indique un objectif personnel situé un point au-dessus du record, puis l’écart restant, l’égalité ou le nouveau record pendant la partie.
+- La page **Progression** utilise des boutons segmentés pour l’épreuve, le nombre de notes et la durée, et affiche l’avancement vers le prochain niveau Long Run.
+- Un niveau Long Run ne contribue désormais au déblocage que s’il est terminé sans faute ; cinq réussites parfaites débloquent le suivant, indépendamment pour 1, 3 et 5 notes.
+- Dans les formats 3 et 5 notes, les cartes sont présentées dans un ordre réellement aléatoire, sans tri du grave vers l’aigu, afin de représenter une ligne de notes plutôt qu’un accord toujours ascendant.
+- L’ordre d’affichage des cartes reste indépendant de l’ordre de sélection des boutons et un même ensemble de notes n’est pas répété immédiatement.
+- Référence graphique et contraintes à préserver : `plan-interface.md`.
+- Validation technique : `npm run build`, `npm run typecheck` et contrôle du diff réussis.

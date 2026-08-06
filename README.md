@@ -36,7 +36,7 @@ Pour les groupes de 3 et 5 notes, chaque nom ne peut apparaître qu’une fois. 
 - Une bonne réponse rapporte un point ; une erreur ou une absence de réponse coûte une vie.
 - La première réponse est verrouillée et la partie se termine à zéro vie.
 - Toutes les 30 secondes, un niveau est gagné et le délai diminue jusqu’au minimum prévu pour la taille du groupe.
-- Après avoir franchi 5 fois un niveau, les parties suivantes commencent directement au niveau supérieur. Le score de départ crédite, pour chaque niveau sauté, le nombre de questions correspondant à ses 30 secondes et à son délai ; cette progression est indépendante pour les formats 1, 3 et 5 notes.
+- Après avoir terminé entièrement et sans faute un même niveau 5 fois, les parties suivantes commencent directement au niveau supérieur. Une faute invalide le niveau en cours pour le déblocage, même si la partie continue avec les vies restantes. Le score de départ crédite, pour chaque niveau sauté, le nombre de questions correspondant à ses 30 secondes et à son délai ; cette progression est indépendante pour les formats 1, 3 et 5 notes.
 - Un changement de niveau marque une courte pause et affiche `⚡ NX` à la place du nom de la note.
 - Score, vies, niveau courant et record local sont affichés.
 - Deux cartes successives ne peuvent pas représenter le même nom naturel, dièse compris.
@@ -47,6 +47,7 @@ Pour les groupes de 3 et 5 notes, chaque nom ne peut apparaître qu’une fois. 
 - La dernière note sélectionnée valide immédiatement la réponse et affiche brièvement `✓` ou `×`.
 - Chaque groupe correct rapporte un point ; la première erreur disqualifie.
 - Les records sont séparés par durée et par nombre de notes.
+- Un objectif personnel vise toujours un point au-dessus du record et indique en direct l’écart restant, un record égalé ou un nouveau record.
 
 ## Progression locale
 

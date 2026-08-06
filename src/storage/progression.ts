@@ -14,10 +14,48 @@ export type PracticeAttempt = {
   configuredDuration: number | null
   reflectionDelay: number | null
   levelReached: number | null
+  perfectLevels?: number[]
   result: PracticeResult
 }
 
-const DB_NAME = 'piano-trainer', STORE_NAME = 'practice-attempts', DB_VERSION = 1
+export const LONG_RUN_MAX_LEVEL = 15
+export const LONG_RUN_RUNS_TO_UNLOCK = 5
+
+export type LongRunUnlockProgress = {
+  unlockedLevel: number
+  qualifyingRuns: number
+  runsRequired: number
+  runsRemaining: number
+  isMaxLevel: boolean
+}
+
+export function getLongRunUnlockProgress(attempts: PracticeAttempt[], noteCount: 1 | 3 | 5): LongRunUnlockProgress {
+  const longRuns = attempts.filter(attempt =>
+    attempt.experience === 'long' &&
+    attempt.noteCount === noteCount
+  )
+  const perfectRunsAtLevel = (level: number) => longRuns.filter(attempt => attempt.perfectLevels?.includes(level)).length
+  let unlockedLevel = 1
+  while (
+    unlockedLevel < LONG_RUN_MAX_LEVEL &&
+    perfectRunsAtLevel(unlockedLevel) >= LONG_RUN_RUNS_TO_UNLOCK
+  ) unlockedLevel++
+
+  const isMaxLevel = unlockedLevel === LONG_RUN_MAX_LEVEL
+  const qualifyingRuns = isMaxLevel
+    ? LONG_RUN_RUNS_TO_UNLOCK
+    : Math.min(LONG_RUN_RUNS_TO_UNLOCK, perfectRunsAtLevel(unlockedLevel))
+
+  return {
+    unlockedLevel,
+    qualifyingRuns,
+    runsRequired: LONG_RUN_RUNS_TO_UNLOCK,
+    runsRemaining: isMaxLevel ? 0 : LONG_RUN_RUNS_TO_UNLOCK - qualifyingRuns,
+    isMaxLevel,
+  }
+}
+
+const DB_NAME = 'piano-trainer', STORE_NAME = 'practice-attempts', DB_VERSION = 2
 
 export function createAttemptId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
@@ -30,12 +68,14 @@ export function createAttemptId() {
 function ouvrir(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const demande = indexedDB.open(DB_NAME, DB_VERSION)
-    demande.onupgradeneeded = () => {
+    demande.onupgradeneeded = event => {
       const db = demande.result
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' })
         store.createIndex('playedAt', 'playedAt')
         store.createIndex('experience', 'experience')
+      } else if (event.oldVersion < 2) {
+        demande.transaction?.objectStore(STORE_NAME).clear()
       }
     }
     demande.onsuccess = () => resolve(demande.result)
