@@ -1,6 +1,6 @@
 # Avancement — Piano Trainer
 
-Dernière mise à jour : 4 août 2026
+Dernière mise à jour : 8 août 2026
 
 ## Références et emplacement
 
@@ -520,3 +520,16 @@ Quatre espaces : Bibliothèque, Entraînement, Practice et Progression.
 - L’ordre d’affichage des cartes reste indépendant de l’ordre de sélection des boutons et un même ensemble de notes n’est pas répété immédiatement.
 - Référence graphique et contraintes à préserver : `plan-interface.md`.
 - Validation technique : `npm run build`, `npm run typecheck` et contrôle du diff réussis.
+
+## Mise à jour du 8 août 2026 — Lecteur MIDI et mode travail
+
+- Les doigtés sont désormais masqués par défaut et restent affichables à la demande.
+- Les noms Do/Ré/Mi, susceptibles de fausser le travail de lecture, ont été retirés des rectangles de notes ; les repères du clavier sont conservés.
+- La sélection main droite/main gauche ne masque plus les notes de l’autre main : toutes les notes restent visibles, la main non travaillée est seulement atténuée et l’audio reste ciblé.
+- Un contour blanc des notes de main gauche reste disponible comme option, désactivée par défaut.
+- Ajout d’une ligne optionnelle de séparation des mains, calculée localement dans le temps puis stabilisée sur la chronologie absolue du morceau pour suivre les déplacements sans vibrer pendant la lecture.
+- Ajout du **mode travail** : lecture en boucle d’une fenêtre de 1, 2, 4 ou 8 mesures, avec 4 mesures par défaut.
+- Navigation précédente/suivante par pas d’une mesure, même lorsque la fenêtre en contient plusieurs.
+- Le planificateur audio est borné à la fenêtre de travail et coupe proprement les notes à son extrémité avant la reprise.
+- Une ligne orange lumineuse `↻ REPRISE`, dessinée au-dessus des notes, matérialise précisément l’instant où la boucle revient à son début.
+- Validation technique : `npm run build` et contrôle du diff réussis.
